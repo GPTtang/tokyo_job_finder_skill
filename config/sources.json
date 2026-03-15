@@ -1,0 +1,20 @@
+{
+  "sources": [
+    {
+      "provider": "greenhouse",
+      "token": "openai"
+    },
+    {
+      "provider": "lever",
+      "company": "notion"
+    },
+    {
+      "provider": "ashby",
+      "board": "anthropic"
+    },
+    {
+      "provider": "company_site",
+      "url": "https://www.preferred.jp/en/careers"
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+I live in Japan and want Tokyo or remote AI Engineer / LLM Engineer roles.
+I have Python, FastAPI, RAG, vector search, and AI agent experience.
+My Japanese is intermediate.
+Find the best matching jobs for me and explain why.

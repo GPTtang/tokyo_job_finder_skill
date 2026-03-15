@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "job-finder-skill"
+version = "0.1.0"
+description = "A single-skill local job finder for Japan AI/LLM roles"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "requests>=2.31.0",
+]
+authors = [
+  { name = "OpenAI ChatGPT" }
+]
+keywords = ["jobs", "skill", "career", "ai", "japan"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "License :: Other/Proprietary License",
+  "Operating System :: OS Independent"
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["job_finder*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.json", "*.md"]
+
+
+[project.scripts]
+job-finder = "job_finder.cli:main"

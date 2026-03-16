@@ -42,6 +42,12 @@ python -m job_finder.cli --query-file examples/japan_ai_engineer.txt --config co
 
 ### Source config
 
+`config/sources.json` is **gitignored** — your personal sources are never committed. Copy the template to get started:
+
+```bash
+cp config/sources.example.json config/sources.json
+```
+
 Edit `config/sources.json` to add job sources. Each source supports optional filters:
 
 ```json
@@ -98,6 +104,12 @@ python -m job_finder.cli --query-file examples/japan_ai_engineer.txt --config co
 
 ### 职位源配置
 
+`config/sources.json` **不纳入版本控制**，你的个人配置不会被提交。先复制模板：
+
+```bash
+cp config/sources.example.json config/sources.json
+```
+
 编辑 `config/sources.json` 添加职位来源，每个来源支持可选过滤条件：
 
 ```json
@@ -153,6 +165,12 @@ python -m job_finder.cli --query-file examples/japan_ai_engineer.txt --config co
 ```
 
 ### 求人ソース設定
+
+`config/sources.json` は **gitignore 対象**のため、個人設定がコミットされることはありません。まずテンプレートをコピーしてください：
+
+```bash
+cp config/sources.example.json config/sources.json
+```
 
 `config/sources.json` を編集して求人ソースを追加。各ソースにフィルターを設定できます：
 

@@ -1,20 +1,33 @@
 {
   "sources": [
     {
-      "provider": "greenhouse",
-      "token": "openai"
-    },
-    {
-      "provider": "lever",
-      "company": "notion"
+      "provider": "ashby",
+      "board": "openai",
+      "filters": {
+        "keywords": ["engineer", "AI", "software", "data"],
+        "locations": ["Tokyo", "Japan", "Remote"]
+      }
     },
     {
       "provider": "ashby",
-      "board": "anthropic"
+      "board": "notion",
+      "filters": {
+        "locations": ["Tokyo", "Japan"]
+      }
     },
     {
-      "provider": "company_site",
-      "url": "https://www.preferred.jp/en/careers"
+      "provider": "greenhouse",
+      "token": "anthropic",
+      "filters": {
+        "locations": ["Tokyo", "Japan", "Remote"]
+      }
+    },
+    {
+      "provider": "greenhouse",
+      "token": "paypaysec",
+      "filters": {
+        "locations": ["Tokyo", "Japan", "Remote"]
+      }
     }
   ]
 }

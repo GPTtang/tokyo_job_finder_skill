@@ -10,6 +10,8 @@ SUPPORTED_PROVIDERS = {
     "ashby": ["board"],
     "company_site": ["url"],
     "japan_dev": [],
+    "gaijinpot": [],
+    "tokyodev": [],
 }
 
 SUPPORTED_FILTER_FIELDS = {

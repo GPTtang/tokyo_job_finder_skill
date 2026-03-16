@@ -1,17 +1,127 @@
 {
-  "_comment": "Copy this file to sources.json and customize. sources.json is gitignored.",
+  "_comment": "将此文件复制为 sources.json 后自定义。sources.json 已加入 .gitignore。",
+
   "sources": [
+
     {
-      "_comment": "Ashby: set 'board' to the company's Ashby board slug",
-      "provider": "ashby",
-      "board": "your-company",
+      "_comment": "【推荐·华人友好】GaijinPot Jobs：专门面向在日外国人的求职平台，常见N2/N3要求岗位",
+      "provider": "gaijinpot",
       "filters": {
-        "keywords": ["engineer", "software", "data"],
+        "keywords": ["engineer", "developer", "software", "N2", "中国語", "Python", "Java"],
+        "locations": ["Tokyo", "東京", "Japan", "Remote"]
+      }
+    },
+
+    {
+      "_comment": "【推荐·英语友好】TokyoDev：面向开发者，许多岗位工作语言为英语，日语N2以下可申请",
+      "provider": "tokyodev",
+      "filters": {
+        "keywords": ["engineer", "developer", "backend", "frontend", "fullstack"],
         "locations": ["Tokyo", "Japan", "Remote"]
       }
     },
+
     {
-      "_comment": "Greenhouse: set 'token' to the company's Greenhouse token",
+      "_comment": "【推荐】Japan Dev：在日技术岗聚合平台，含国际化公司和日语友好岗位",
+      "provider": "japan_dev",
+      "filters": {
+        "keywords": ["engineer", "developer", "software", "N2", "JLPT"],
+        "locations": ["Tokyo", "Japan", "Remote"]
+      }
+    },
+
+    {
+      "_comment": "【华人公司·Greenhouse】ByteDance/TikTok Japan：中国背景公司，中文是加分项，日语N2可",
+      "provider": "greenhouse",
+      "token": "bytedance",
+      "filters": {
+        "keywords": ["engineer", "software", "backend", "data"],
+        "locations": ["Tokyo", "Japan", "東京"]
+      }
+    },
+
+    {
+      "_comment": "【华人公司·Greenhouse】SmartNews：中英日三语环境，技术岗多，N2起步",
+      "provider": "greenhouse",
+      "token": "smartnews",
+      "filters": {
+        "keywords": ["engineer", "developer"],
+        "locations": ["Tokyo", "Japan"]
+      }
+    },
+
+    {
+      "_comment": "【日本大厂·Lever】Mercari：国际化程度高，英语工作环境，日语N2可申请部分岗位",
+      "provider": "lever",
+      "company": "mercari",
+      "filters": {
+        "keywords": ["engineer", "developer", "software"],
+        "locations": ["Tokyo", "Japan"]
+      }
+    },
+
+    {
+      "_comment": "【日本大厂·Ashby】Moneyforward：金融科技，有中国人团队，N2起步",
+      "provider": "ashby",
+      "board": "moneyforward",
+      "filters": {
+        "keywords": ["engineer", "developer"],
+        "locations": ["Tokyo", "Japan"]
+      }
+    },
+
+    {
+      "_comment": "【外资·Ashby】Woven by Toyota：丰田旗下自动驾驶，国际环境，英语为主",
+      "provider": "ashby",
+      "board": "woven-by-toyota",
+      "filters": {
+        "keywords": ["engineer", "software", "autonomous", "robotics"],
+        "locations": ["Tokyo", "Japan"]
+      }
+    },
+
+    {
+      "_comment": "【外资·Greenhouse】Indeed Japan：确认岗位N2要求，外资氛围，中国人多",
+      "provider": "greenhouse",
+      "token": "indeed",
+      "filters": {
+        "keywords": ["engineer", "software", "data"],
+        "locations": ["Tokyo", "Japan"]
+      }
+    },
+
+    {
+      "_comment": "【华人友好·公司官网】BIGO Technology Japan：新加坡背景，中日英三语环境",
+      "provider": "company_site",
+      "url": "https://www.bigo.tv/careers",
+      "filters": {
+        "keywords": ["engineer", "developer"],
+        "locations": ["Tokyo", "Japan"]
+      }
+    },
+
+    {
+      "_comment": "【日本大厂·公司官网】CyberAgent：游戏/广告/AI业务多，有中国人团队，N2以上",
+      "provider": "company_site",
+      "url": "https://www.cyberagent.co.jp/careers/",
+      "filters": {
+        "keywords": ["エンジニア", "engineer", "developer", "N2"],
+        "locations": ["Tokyo", "渋谷", "東京"]
+      }
+    },
+
+    {
+      "_comment": "【外资·公司官网】LINE/LINEヤフー：国际化IT公司，有中文母语团队，N2+",
+      "provider": "company_site",
+      "url": "https://careers.linecorp.com/jobs/",
+      "filters": {
+        "keywords": ["engineer", "developer", "software"],
+        "locations": ["Tokyo", "Japan"]
+      }
+    },
+
+    {
+      "_comment": "通用模板：Greenhouse 公司（替换 token 为目标公司的 Greenhouse 标识符）",
       "provider": "greenhouse",
       "token": "your-company",
       "filters": {
@@ -19,28 +129,32 @@
         "locations": ["Tokyo", "Japan"]
       }
     },
+
     {
-      "_comment": "Lever: set 'company' to the company's Lever slug",
+      "_comment": "通用模板：Lever 公司（替换 company 为目标公司的 Lever slug）",
       "provider": "lever",
       "company": "your-company",
       "filters": {
         "locations": ["Tokyo", "Japan"]
       }
     },
+
     {
-      "_comment": "Company site: provide a direct job listing URL",
+      "_comment": "通用模板：Ashby 公司（替换 board 为目标公司的 Ashby board slug）",
+      "provider": "ashby",
+      "board": "your-company",
+      "filters": {
+        "keywords": ["engineer", "software"],
+        "locations": ["Tokyo", "Japan", "Remote"]
+      }
+    },
+
+    {
+      "_comment": "通用模板：任意公司官网招聘页（替换 url 为目标公司的招聘页地址）",
       "provider": "company_site",
       "url": "https://example.com/careers",
       "filters": {
         "keywords": ["engineer"]
-      }
-    },
-    {
-      "_comment": "japan-dev.com: no extra params required",
-      "provider": "japan_dev",
-      "filters": {
-        "keywords": ["engineer", "developer", "software"],
-        "locations": ["Tokyo", "Japan", "Remote"]
       }
     }
   ]

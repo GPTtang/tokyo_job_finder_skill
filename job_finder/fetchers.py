@@ -581,6 +581,147 @@ def fetch_japan_dev(fetch_options: Dict[str, Any] | None = None) -> FetchResult:
     return result
 
 
+def fetch_gaijinpot(fetch_options: Dict[str, Any] | None = None) -> FetchResult:
+    """Fetch jobs from GaijinPot Jobs (jobs.gaijinpot.com).
+
+    GaijinPot targets foreign workers in Japan and commonly lists positions
+    with JLPT N2/N3 requirements — a good fit for Chinese speakers who don't
+    yet hold N1.  The site is partially client-side rendered; results may be
+    sparse without a headless browser.
+    """
+    provider = "gaijinpot"
+    fetch_options = fetch_options or {}
+    base_url = "https://jobs.gaijinpot.com"
+    search_url = f"{base_url}/job/index/search"
+
+    # Try the JSON search endpoint first
+    data, issues = _safe_get_json(
+        search_url,
+        provider=provider,
+        timeout_seconds=fetch_options.get("timeout_seconds", 15),
+        max_retries=fetch_options.get("max_retries", 1),
+        retry_backoff_seconds=fetch_options.get("retry_backoff_seconds", 0.5),
+    )
+    result = FetchResult(provider=provider, issues=issues)
+
+    if data:
+        jobs = _scan_for_jobs(data, search_url)
+        if jobs:
+            result.jobs = jobs
+            return result
+
+    # Fall back to HTML scraping of the listings page
+    html, html_issues = _safe_get_text(
+        base_url,
+        provider=provider,
+        timeout_seconds=fetch_options.get("timeout_seconds", 15),
+        max_retries=fetch_options.get("max_retries", 1),
+        retry_backoff_seconds=fetch_options.get("retry_backoff_seconds", 0.5),
+    )
+    result.issues.extend(html_issues)
+
+    jobs: List[Dict[str, Any]] = []
+    if html:
+        jobs.extend(_extract_json_ld_jobpostings(html, base_url))
+        if not jobs:
+            for raw in re.findall(
+                r'<script[^>]+type=["\']application/json["\'][^>]*>(.*?)</script>',
+                html,
+                flags=re.I | re.S,
+            ):
+                try:
+                    jobs.extend(_scan_for_jobs(json.loads(raw.strip()), base_url))
+                except Exception:
+                    pass
+
+    if not jobs:
+        result.issues.append(FetchIssue(
+            provider=provider,
+            source_ref=base_url,
+            message=(
+                "GaijinPot Jobs appears to be client-side rendered; "
+                "no job data extracted from static HTML. "
+                "A headless browser is required for reliable extraction."
+            ),
+            severity="warning",
+            retryable=False,
+        ))
+
+    result.jobs = jobs
+    return result
+
+
+def fetch_tokyodev(fetch_options: Dict[str, Any] | None = None) -> FetchResult:
+    """Fetch jobs from TokyoDev (tokyodev.com/jobs).
+
+    TokyoDev lists developer positions in Japan that are open to non-Japanese
+    speakers.  Many roles specify English as the working language and do not
+    require Japanese above N2, making it a strong source for Chinese-speaking
+    engineers.
+    """
+    provider = "tokyodev"
+    fetch_options = fetch_options or {}
+    base_url = "https://www.tokyodev.com"
+    jobs_url = f"{base_url}/jobs"
+
+    html, issues = _safe_get_text(
+        jobs_url,
+        provider=provider,
+        timeout_seconds=fetch_options.get("timeout_seconds", 15),
+        max_retries=fetch_options.get("max_retries", 1),
+        retry_backoff_seconds=fetch_options.get("retry_backoff_seconds", 0.5),
+    )
+    result = FetchResult(provider=provider, issues=issues)
+
+    if not html:
+        return result
+
+    jobs: List[Dict[str, Any]] = []
+
+    # Next.js / React hydration blobs
+    for raw in re.findall(
+        r'<script[^>]+id=["\']__NEXT_DATA__["\'][^>]*>(.*?)</script>',
+        html,
+        flags=re.I | re.S,
+    ):
+        try:
+            jobs.extend(_scan_for_jobs(json.loads(raw.strip()), jobs_url))
+        except Exception:
+            pass
+
+    # Generic JSON-LD fallback
+    if not jobs:
+        jobs.extend(_extract_json_ld_jobpostings(html, jobs_url))
+
+    # Generic application/json script tags
+    if not jobs:
+        for raw in re.findall(
+            r'<script[^>]+type=["\']application/json["\'][^>]*>(.*?)</script>',
+            html,
+            flags=re.I | re.S,
+        ):
+            try:
+                jobs.extend(_scan_for_jobs(json.loads(raw.strip()), jobs_url))
+            except Exception:
+                pass
+
+    if not jobs:
+        result.issues.append(FetchIssue(
+            provider=provider,
+            source_ref=jobs_url,
+            message=(
+                "TokyoDev appears to be client-side rendered; "
+                "no job data extracted from static HTML. "
+                "A headless browser is required for reliable extraction."
+            ),
+            severity="warning",
+            retryable=False,
+        ))
+
+    result.jobs = jobs
+    return result
+
+
 def fetch_from_source(source: Dict[str, Any], fetch_options: Dict[str, Any] | None = None) -> FetchResult:
     provider = source.get("provider")
     filters = source.get("filters")
@@ -595,6 +736,10 @@ def fetch_from_source(source: Dict[str, Any], fetch_options: Dict[str, Any] | No
         result = fetch_company_site(source["url"], fetch_options=fetch_options)
     elif provider == "japan_dev":
         result = fetch_japan_dev(fetch_options=fetch_options)
+    elif provider == "gaijinpot":
+        result = fetch_gaijinpot(fetch_options=fetch_options)
+    elif provider == "tokyodev":
+        result = fetch_tokyodev(fetch_options=fetch_options)
     else:
         return FetchResult(
             provider=str(provider or "unknown"),

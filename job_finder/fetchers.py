@@ -489,6 +489,98 @@ def fetch_company_site(url: str, fetch_options: Dict[str, Any] | None = None) ->
     return result
 
 
+def _scan_for_jobs(data: Any, source_url: str) -> List[Dict[str, Any]]:
+    """Recursively scan a nested data structure for job-like records."""
+    jobs: List[Dict[str, Any]] = []
+    if isinstance(data, dict):
+        title = data.get("title") or data.get("name") or data.get("job_title")
+        company = data.get("company") or data.get("company_name") or data.get("employer")
+        if title and company and isinstance(title, str) and isinstance(company, str):
+            desc = str(data.get("description") or data.get("body") or "")
+            jobs.append(make_job(
+                title=title,
+                company=company,
+                location=str(data.get("location") or data.get("city") or ""),
+                url=str(data.get("url") or data.get("job_url") or data.get("apply_url") or source_url),
+                description=_html_to_text(desc),
+                source="japan_dev",
+                skills=_extract_basic_skills(desc),
+            ))
+        else:
+            for v in data.values():
+                jobs.extend(_scan_for_jobs(v, source_url))
+    elif isinstance(data, list):
+        for item in data:
+            jobs.extend(_scan_for_jobs(item, source_url))
+    return jobs
+
+
+def fetch_japan_dev(fetch_options: Dict[str, Any] | None = None) -> FetchResult:
+    """Fetch jobs from japan-dev.com.
+
+    japan-dev.com is a Nuxt/Vue SPA backed by Algolia search.  This fetcher
+    attempts to extract SSR-hydrated job data injected by the server (Nuxt 2
+    ``window.__NUXT__`` or Nuxt 3 ``<script id="__NUXT_DATA__">`` patterns)
+    and falls back to JSON-LD extraction.  Results may be empty when the page
+    is fully client-side rendered; in that case a descriptive warning is
+    emitted so callers can take alternative action (e.g. a headless browser).
+    """
+    provider = "japan_dev"
+    fetch_options = fetch_options or {}
+    url = "https://japan-dev.com/jobs"
+    html, issues = _safe_get_text(
+        url,
+        provider=provider,
+        timeout_seconds=fetch_options.get("timeout_seconds", 15),
+        max_retries=fetch_options.get("max_retries", 1),
+        retry_backoff_seconds=fetch_options.get("retry_backoff_seconds", 0.5),
+    )
+    result = FetchResult(provider=provider, issues=issues)
+    if not html:
+        return result
+
+    jobs: List[Dict[str, Any]] = []
+
+    # Nuxt 3: <script id="__NUXT_DATA__" type="application/json">…</script>
+    for raw in re.findall(
+        r'<script[^>]+id=["\']__NUXT_DATA__["\'][^>]*>(.*?)</script>',
+        html,
+        flags=re.I | re.S,
+    ):
+        try:
+            jobs.extend(_scan_for_jobs(json.loads(raw.strip()), url))
+        except Exception:
+            pass
+
+    # Nuxt 2: window.__NUXT__ = {…};
+    if not jobs:
+        for m in re.finditer(r'window\.__NUXT__\s*=\s*(\{.*?\})\s*(?:;|</script>)', html, re.S):
+            try:
+                jobs.extend(_scan_for_jobs(json.loads(m.group(1)), url))
+            except Exception:
+                pass
+
+    # Generic JSON-LD fallback
+    if not jobs:
+        jobs.extend(_extract_json_ld_jobpostings(html, url))
+
+    if not jobs:
+        result.issues.append(FetchIssue(
+            provider=provider,
+            source_ref=url,
+            message=(
+                "japan-dev.com appears to be fully client-side rendered via Algolia; "
+                "no job data extracted from static HTML. "
+                "A headless browser is required for reliable extraction."
+            ),
+            severity="warning",
+            retryable=False,
+        ))
+
+    result.jobs = jobs
+    return result
+
+
 def fetch_from_source(source: Dict[str, Any], fetch_options: Dict[str, Any] | None = None) -> FetchResult:
     provider = source.get("provider")
     filters = source.get("filters")
@@ -501,6 +593,8 @@ def fetch_from_source(source: Dict[str, Any], fetch_options: Dict[str, Any] | No
         result = fetch_ashby(source["board"], fetch_options=fetch_options)
     elif provider == "company_site":
         result = fetch_company_site(source["url"], fetch_options=fetch_options)
+    elif provider == "japan_dev":
+        result = fetch_japan_dev(fetch_options=fetch_options)
     else:
         return FetchResult(
             provider=str(provider or "unknown"),

@@ -9,6 +9,7 @@ SUPPORTED_PROVIDERS = {
     "lever": ["company"],
     "ashby": ["board"],
     "company_site": ["url"],
+    "japan_dev": [],
 }
 
 SUPPORTED_FILTER_FIELDS = {

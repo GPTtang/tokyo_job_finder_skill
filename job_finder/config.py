@@ -74,7 +74,9 @@ def validate_config(config: Dict[str, Any]) -> Tuple[List[str], List[str]]:
         errors.append("`sources` 必须是数组。")
         return errors, warnings
 
-    fetch_options = config.get("fetch_options", {})
+    fetch_options = config.get("fetch_options") or {}
+    if not fetch_options:
+        fetch_options = dict(DEFAULT_FETCH_OPTIONS)
     if not isinstance(fetch_options, dict):
         errors.append("`fetch_options` 必须是对象。")
     else:

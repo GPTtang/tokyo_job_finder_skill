@@ -1,57 +1,46 @@
 {
-  "fetch_options": {
-    "timeout_seconds": 15,
-    "max_retries": 1,
-    "retry_backoff_seconds": 0.5,
-    "max_follow_links": 3
-  },
+  "_comment": "Copy this file to sources.json and customize. sources.json is gitignored.",
   "sources": [
     {
-      "provider": "greenhouse",
-      "token": "openai",
-      "filters": {
-        "keywords": [
-          "AI",
-          "Engineer",
-          "LLM"
-        ],
-        "locations": [
-          "Tokyo",
-          "Japan"
-        ],
-        "remote_preferred": true
-      }
-    },
-    {
-      "provider": "lever",
-      "company": "notion",
-      "filters": {
-        "keywords": [
-          "backend",
-          "platform",
-          "AI"
-        ],
-        "remote_only": false
-      }
-    },
-    {
+      "_comment": "Ashby: set 'board' to the company's Ashby board slug",
       "provider": "ashby",
-      "board": "anthropic",
+      "board": "your-company",
       "filters": {
-        "keywords": [
-          "LLM",
-          "Applied AI"
-        ],
-        "remote_preferred": true
+        "keywords": ["engineer", "software", "data"],
+        "locations": ["Tokyo", "Japan", "Remote"]
       }
     },
     {
-      "provider": "company_site",
-      "url": "https://www.preferred.jp/en/careers",
+      "_comment": "Greenhouse: set 'token' to the company's Greenhouse token",
+      "provider": "greenhouse",
+      "token": "your-company",
       "filters": {
-        "locations": [
-          "Tokyo"
-        ]
+        "keywords": ["engineer", "developer"],
+        "locations": ["Tokyo", "Japan"]
+      }
+    },
+    {
+      "_comment": "Lever: set 'company' to the company's Lever slug",
+      "provider": "lever",
+      "company": "your-company",
+      "filters": {
+        "locations": ["Tokyo", "Japan"]
+      }
+    },
+    {
+      "_comment": "Company site: provide a direct job listing URL",
+      "provider": "company_site",
+      "url": "https://example.com/careers",
+      "filters": {
+        "keywords": ["engineer"]
+      }
+    },
+    {
+      "_comment": "japan-dev.com: no extra params required",
+      "provider": "japan_dev",
+      "filters": {
+        "keywords": ["engineer", "developer", "software"],
+        "locations": ["Tokyo", "Japan", "Remote"]
       }
     }
   ]

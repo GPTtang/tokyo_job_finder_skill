@@ -27,9 +27,15 @@ DEFAULT_FETCH_OPTIONS: Dict[str, Any] = {
 }
 
 
+_DEFAULT_CONFIG_PATH = Path("config/sources.json")
+
+
 def load_config(config_path: str | None) -> Dict[str, Any]:
     if not config_path:
-        return {"sources": [], "fetch_options": dict(DEFAULT_FETCH_OPTIONS)}
+        if _DEFAULT_CONFIG_PATH.exists():
+            config_path = str(_DEFAULT_CONFIG_PATH)
+        else:
+            return {"sources": [], "fetch_options": dict(DEFAULT_FETCH_OPTIONS)}
 
     path = Path(config_path)
     data = json.loads(path.read_text(encoding="utf-8"))

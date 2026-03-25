@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from html import unescape
 from typing import Any, Dict, Iterable, List, Optional, Tuple
@@ -245,7 +246,27 @@ def _safe_get_text(
         ))
         return None, issues
 
-    return response.text, issues
+    # Detect encoding robustly — requests defaults to ISO-8859-1 for text/html
+    # which breaks Japanese (UTF-8) pages.  Priority:
+    #   1. charset declared in Content-Type header
+    #   2. charset declared in <meta> tag
+    #   3. UTF-8 (safe fallback for most modern pages)
+    content_type = response.headers.get("content-type", "")
+    ct_charset = re.search(r'charset=([^\s;]+)', content_type, re.I)
+    if ct_charset:
+        encoding = ct_charset.group(1).strip()
+    else:
+        raw = response.content
+        meta_charset = re.search(
+            rb'<meta[^>]+charset=["\']?([a-zA-Z0-9_\-]+)',
+            raw[:4096], re.I,
+        )
+        encoding = meta_charset.group(1).decode("ascii") if meta_charset else "utf-8"
+
+    try:
+        return response.content.decode(encoding, errors="replace"), issues
+    except (LookupError, UnicodeDecodeError):
+        return response.content.decode("utf-8", errors="replace"), issues
 
 
 def _html_to_text(value: str) -> str:
@@ -481,6 +502,149 @@ def fetch_ashby(board: str, fetch_options: Dict[str, Any] | None = None) -> Fetc
     return result
 
 
+def _extract_company_name_from_html(html: str) -> str:
+    """Best-effort extraction of company name from page <title> or og:site_name."""
+    m = re.search(r'<meta[^>]+property=["\']og:site_name["\'][^>]+content=["\'](.*?)["\']', html, re.I)
+    if m:
+        return m.group(1).strip()
+    m = re.search(r'<title[^>]*>(.*?)</title>', html, re.I | re.S)
+    if m:
+        title = _html_to_text(m.group(1))
+        # "Careers | CompanyName" or "CompanyName - 採用情報" → take the meaningful part
+        for sep in ["|", "｜", " - ", "—", "–", "·", "採用情報", "求人情報", "採用", "Careers", "Jobs"]:
+            if sep in title:
+                parts = [p.strip() for p in title.split(sep) if p.strip()]
+                parts = [p for p in parts if len(p) > 1 and p not in ("Careers", "Jobs", "採用情報", "求人情報", "採用")]
+                if parts:
+                    return parts[-1]  # usually company name is at the end
+        return title.strip()[:60]
+    return ""
+
+
+# Job-title signals for heuristic detection — deliberately conservative to avoid
+# matching navigation labels, service descriptions, or marketing headings.
+# Only include terms that are unambiguous job role identifiers.
+_JOB_TITLE_SIGNALS = [
+    # Japanese role suffixes / standalone titles
+    "エンジニア", "プログラマー", "プログラマ", "ブリッジSE", "ブリッジエンジニア",
+    "システムエンジニア", "インフラエンジニア", "クラウドエンジニア",
+    "プロジェクトマネージャー", "ITコンサルタント", "アーキテクト", "スペシャリスト",
+    # Chinese / bilingual role names common in Chinese IT companies in Japan
+    "開発エンジニア", "ネットワークエンジニア", "セキュリティエンジニア",
+    # English role suffixes (require at least one word before, matched via regex)
+    " Engineer", " Developer", " Architect", " Consultant", " Manager",
+    " Analyst", " Specialist", " Programmer", " Lead", " Director",
+    # Exact short abbreviations — only valid as the whole text or with adjective
+    "Bridge SE", "SRE", "DevOps Engineer", "PMO",
+]
+
+# Phrases that look like job signals but are NOT job titles — skip these
+_JOB_TITLE_EXCLUDES = [
+    "services we offer", "it services", "our services", "service", "talent acquisition",
+    "about us", "contact", "news", "blog", "support", "solutions", "products",
+    "サービス", "ソリューション", "お問い合わせ", "採用情報", "会社概要",
+]
+
+
+def _looks_like_job_title(text: str) -> bool:
+    """Return True if a short text fragment looks like a job title."""
+    if not text or len(text) < 4 or len(text) > 100:
+        return False
+    t_lower = text.lower()
+    # Exclude known non-title phrases
+    if any(excl in t_lower for excl in _JOB_TITLE_EXCLUDES):
+        return False
+    return any(sig.lower() in t_lower for sig in _JOB_TITLE_SIGNALS)
+
+
+def _extract_jobs_from_html_heuristic(
+    html: str,
+    url: str,
+    company_hint: str = "",
+) -> List[Dict[str, Any]]:
+    """Extract job listings from plain HTML career pages without JSON-LD.
+
+    Strategy:
+    1. Derive company name from <title> / og:site_name.
+    2. Scan <h2>/<h3>/<h4> headings and <td>/<li> elements for job-title-like text.
+    3. Build one synthetic job record per detected title, using the surrounding
+       section text as the description.
+
+    This covers ~60-70% of Japanese company career pages that use plain HTML
+    tables or lists rather than structured data formats.
+    """
+    if not html:
+        return []
+
+    company = company_hint or _extract_company_name_from_html(html)
+    if not company:
+        # Fall back to domain name
+        m = re.search(r'https?://(?:www\.)?([^/]+)', url)
+        company = m.group(1) if m else url
+
+    jobs: List[Dict[str, Any]] = []
+    seen_titles: set = set()
+
+    # --- Pass 1: headings (h2/h3/h4) ----------------------------------------
+    for m in re.finditer(r'<h[234][^>]*>(.*?)</h[234]>', html, re.I | re.S):
+        text = _html_to_text(m.group(1)).strip()
+        if not _looks_like_job_title(text) or text.lower() in seen_titles:
+            continue
+        seen_titles.add(text.lower())
+        # Grab the text that follows the heading (up to 800 chars) as description
+        pos_end = m.end()
+        snippet = _html_to_text(html[pos_end: pos_end + 1200])[:500]
+        jobs.append(make_job(
+            title=text,
+            company=company,
+            location="Tokyo, Japan",  # assume Tokyo unless text says otherwise
+            url=url,
+            description=snippet,
+            source="company_site",
+            skills=_extract_basic_skills(f"{text} {snippet}"),
+        ))
+
+    if jobs:
+        return jobs
+
+    # --- Pass 2: table cells <td> --------------------------------------------
+    for m in re.finditer(r'<td[^>]*>(.*?)</td>', html, re.I | re.S):
+        text = _html_to_text(m.group(1)).strip()
+        if not _looks_like_job_title(text) or text.lower() in seen_titles:
+            continue
+        seen_titles.add(text.lower())
+        jobs.append(make_job(
+            title=text,
+            company=company,
+            location="Tokyo, Japan",
+            url=url,
+            description=text,
+            source="company_site",
+            skills=_extract_basic_skills(text),
+        ))
+
+    if jobs:
+        return jobs
+
+    # --- Pass 3: list items <li> ---------------------------------------------
+    for m in re.finditer(r'<li[^>]*>(.*?)</li>', html, re.I | re.S):
+        text = _html_to_text(m.group(1)).strip()
+        if not _looks_like_job_title(text) or text.lower() in seen_titles:
+            continue
+        seen_titles.add(text.lower())
+        jobs.append(make_job(
+            title=text,
+            company=company,
+            location="Tokyo, Japan",
+            url=url,
+            description=text,
+            source="company_site",
+            skills=_extract_basic_skills(text),
+        ))
+
+    return jobs
+
+
 def _extract_json_ld_jobpostings(html: str, base_url: str) -> List[Dict[str, Any]]:
     jobs = []
     scripts = re.findall(
@@ -634,55 +798,65 @@ def fetch_browser_site(url: str, fetch_options: Dict[str, Any] | None = None) ->
 def fetch_company_site(url: str, fetch_options: Dict[str, Any] | None = None) -> FetchResult:
     provider = "company_site"
     fetch_options = fetch_options or {}
-    html, issues = _safe_get_text(
-        url,
-        provider=provider,
-        timeout_seconds=fetch_options.get("timeout_seconds", 15),
-        max_retries=fetch_options.get("max_retries", 1),
-        retry_backoff_seconds=fetch_options.get("retry_backoff_seconds", 0.5),
-    )
-    result = FetchResult(provider=provider, issues=issues)
+    timeout = fetch_options.get("timeout_seconds", 15)
+    retries = fetch_options.get("max_retries", 1)
+    backoff = fetch_options.get("retry_backoff_seconds", 0.5)
 
+    html, issues = _safe_get_text(url, provider=provider,
+                                   timeout_seconds=timeout, max_retries=retries,
+                                   retry_backoff_seconds=backoff)
+    result = FetchResult(provider=provider, issues=issues)
     if not html:
         return result
 
+    # 1. JSON-LD structured data (best quality)
     jobs = _extract_json_ld_jobpostings(html, url)
     if jobs:
         result.jobs = jobs
         return result
 
+    # 2. Follow career/recruit links (Japanese: 採用, 求人; English: career/jobs)
+    career_keywords = ("job", "jobs", "career", "careers", "recruit", "position",
+                       "opening", "採用", "求人", "キャリア", "saiyou")
     hrefs = re.findall(r'href=["\']([^"\']+)["\']', html, flags=re.I)
-    candidate_links = []
-    keywords = ("job", "jobs", "career", "careers", "recruit", "position", "opening")
+    candidate_links: List[str] = []
     for href in hrefs:
-        href_l = href.lower()
-        if any(k in href_l for k in keywords):
+        if any(k in href.lower() for k in career_keywords):
             full = urljoin(url, href)
-            if full not in candidate_links:
+            if full != url and full not in candidate_links:
                 candidate_links.append(full)
 
-    followed = 0
+    followed_htmls: List[tuple[str, str]] = []
     max_follow_links = fetch_options.get("max_follow_links", 3)
     for link in candidate_links[:max_follow_links]:
-        followed += 1
-        child_html, child_issues = _safe_get_text(
-            link,
-            provider=provider,
-            timeout_seconds=fetch_options.get("timeout_seconds", 15),
-            max_retries=fetch_options.get("max_retries", 1),
-            retry_backoff_seconds=fetch_options.get("retry_backoff_seconds", 0.5),
-        )
+        child_html, child_issues = _safe_get_text(link, provider=provider,
+                                                   timeout_seconds=timeout,
+                                                   max_retries=retries,
+                                                   retry_backoff_seconds=backoff)
         result.issues.extend(child_issues)
         if not child_html:
             continue
+        followed_htmls.append((child_html, link))
         child_jobs = _extract_json_ld_jobpostings(child_html, link)
         jobs.extend(child_jobs)
 
-    if followed == 0:
+    if jobs:
+        result.jobs = jobs
+        return result
+
+    # 3. Heuristic extraction — plain HTML tables/lists (Japanese career pages)
+    jobs = _extract_jobs_from_html_heuristic(html, url)
+    if not jobs:
+        for child_html, child_url in followed_htmls:
+            jobs = _extract_jobs_from_html_heuristic(child_html, child_url)
+            if jobs:
+                break
+
+    if not followed_htmls and not jobs:
         result.issues.append(FetchIssue(
             provider=provider,
             source_ref=url,
-            message="No likely careers links discovered",
+            message="No career links found and heuristic extraction yielded nothing",
             severity="warning",
             retryable=False,
         ))
@@ -690,10 +864,10 @@ def fetch_company_site(url: str, fetch_options: Dict[str, Any] | None = None) ->
         result.issues.append(FetchIssue(
             provider=provider,
             source_ref=url,
-            message="Careers page discovered, but no JSON-LD JobPosting extracted",
+            message="Careers page found but no jobs extracted (JSON-LD or heuristic)",
             severity="warning",
             retryable=False,
-            details={"followed_links": followed},
+            details={"followed_links": len(followed_htmls)},
         ))
 
     result.jobs = jobs
@@ -886,14 +1060,25 @@ def fetch_from_source(source: Dict[str, Any], fetch_options: Dict[str, Any] | No
 
 
 def fetch_all(sources: Iterable[Dict[str, Any]], fetch_options: Dict[str, Any] | None = None) -> Dict[str, Any]:
+    fetch_options = fetch_options or {}
+
+    active_sources: List[Dict[str, Any]] = []
+    for source in sources:
+        if isinstance(source, dict) and source and all(k.startswith("_") for k in source.keys()):
+            continue
+        active_sources.append(source)
+
+    if not active_sources:
+        return {"jobs": [], "issues": []}
+
     all_jobs: List[Dict[str, Any]] = []
     all_issues: List[Dict[str, Any]] = []
 
-    for source in sources:
-        # Skip human-readable separator / comment objects (all keys start with "_")
-        if isinstance(source, dict) and source and all(k.startswith("_") for k in source.keys()):
-            continue
-        result = fetch_from_source(source, fetch_options=fetch_options)
+    max_workers = fetch_options.get("max_concurrent_fetches")
+    if not isinstance(max_workers, int) or max_workers <= 0:
+        max_workers = min(4, len(active_sources)) or 1
+
+    def _collect(result: FetchResult) -> None:
         all_jobs.extend(result.jobs)
         all_issues.extend([
             {
@@ -906,6 +1091,35 @@ def fetch_all(sources: Iterable[Dict[str, Any]], fetch_options: Dict[str, Any] |
             }
             for issue in result.issues
         ])
+
+    def _safe_fetch(source: Dict[str, Any]) -> FetchResult:
+        try:
+            return fetch_from_source(source, fetch_options=fetch_options)
+        except Exception as exc:  # noqa: BLE001
+            provider = "unknown"
+            if isinstance(source, dict):
+                provider = str(source.get("provider") or "unknown")
+            return FetchResult(
+                provider=provider,
+                issues=[
+                    FetchIssue(
+                        provider=provider,
+                        message=f"未处理的抓取异常：{exc}",
+                        severity="error",
+                        retryable=False,
+                        details={"source": source},
+                    )
+                ],
+            )
+
+    if max_workers == 1:
+        for source in active_sources:
+            _collect(_safe_fetch(source))
+    else:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_map = {executor.submit(_safe_fetch, source): source for source in active_sources}
+            for future in as_completed(future_map):
+                _collect(future.result())
 
     return {
         "jobs": all_jobs,

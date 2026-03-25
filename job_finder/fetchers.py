@@ -10,6 +10,62 @@ from urllib.parse import urljoin
 
 import requests
 
+# ---------------------------------------------------------------------------
+# Headless browser support (optional — requires: pip install playwright
+#                                                playwright install chromium)
+# ---------------------------------------------------------------------------
+
+def _playwright_get_text(
+    url: str,
+    *,
+    timeout_ms: int = 30_000,
+    wait_until: str = "networkidle",
+) -> tuple[Optional[str], List["FetchIssue"]]:
+    """Fetch ``url`` with a headless Chromium browser and return the rendered HTML.
+
+    Returns ``(None, issues)`` if Playwright is not installed or the fetch fails,
+    so callers can degrade gracefully without crashing.
+    """
+    try:
+        from playwright.sync_api import sync_playwright  # type: ignore[import]
+    except ImportError:
+        return None, [FetchIssue(
+            provider="browser",
+            source_ref=url,
+            message=(
+                "Playwright not installed — JS rendering unavailable. "
+                "To enable: pip install playwright && playwright install chromium"
+            ),
+            severity="warning",
+            retryable=False,
+        )]
+
+    try:
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch(headless=True)
+            ctx = browser.new_context(
+                user_agent=(
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/124.0.0.0 Safari/537.36"
+                ),
+                viewport={"width": 1280, "height": 900},
+                locale="ja-JP",
+            )
+            page = ctx.new_page()
+            page.goto(url, wait_until=wait_until, timeout=timeout_ms)
+            html = page.content()
+            browser.close()
+            return html, []
+    except Exception as exc:  # noqa: BLE001
+        return None, [FetchIssue(
+            provider="browser",
+            source_ref=url,
+            message=f"Playwright error: {exc}",
+            severity="error",
+            retryable=False,
+        )]
+
 
 @dataclass
 class FetchIssue:
@@ -188,11 +244,30 @@ def _html_to_text(value: str) -> str:
 
 def _extract_basic_skills(text: str) -> List[str]:
     vocab = [
-        "Python", "FastAPI", "RAG", "LLM", "LangChain", "LangGraph",
+        # AI / LLM
+        "RAG", "LLM", "LangChain", "LangGraph", "Agent", "Vector Search",
+        "Machine Learning", "PyTorch", "TensorFlow", "Dify", "Ollama",
         "OpenSearch", "Elasticsearch", "Qdrant", "FAISS",
-        "AWS", "GCP", "Azure", "Docker", "Kubernetes",
-        "PyTorch", "TensorFlow", "Go", "TypeScript", "React",
-        "Agent", "Vector Search", "Machine Learning",
+        # Backend languages
+        "Python", "Java", "C#", ".NET", "Go", "TypeScript", "JavaScript",
+        "PHP", "Ruby", "Scala", "Kotlin",
+        # Frontend
+        "React", "Vue", "Angular",
+        # API / Frameworks
+        "FastAPI", "Spring Boot", "Spring Cloud", ".NET Core", "ASP.NET",
+        # Cloud & Infra
+        "AWS", "GCP", "Azure", "Docker", "Kubernetes", "Jenkins",
+        "Nginx", "Redis", "RabbitMQ",
+        # Databases
+        "SQL Server", "MySQL", "PostgreSQL", "MongoDB", "Oracle",
+        # Microsoft ecosystem
+        "SharePoint", "Office365", "Dynamics 365", "Power Platform",
+        # Japanese market specific
+        "JLPT", "N1", "N2", "N3", "日本語", "英語", "中国語",
+        # BIM / Construction IT
+        "BIM", "CAD",
+        # Microservices / Architecture
+        "microservices", "マイクロサービス", "オフショア", "offshore",
     ]
     text_l = (text or "").lower()
     return [skill for skill in vocab if skill.lower() in text_l]
@@ -420,6 +495,127 @@ def _extract_json_ld_jobpostings(html: str, base_url: str) -> List[Dict[str, Any
     return jobs
 
 
+def _extract_jobs_from_rendered_html(html: str, base_url: str) -> List[Dict[str, Any]]:
+    """Extract job listings from fully rendered HTML using all available strategies.
+
+    Tries (in order): JSON-LD → Next.js __NEXT_DATA__ → Nuxt 3 __NUXT_DATA__ →
+    Nuxt 2 window.__NUXT__ → generic application/json blobs.
+    Returns on the first strategy that yields results.
+    """
+    if not html:
+        return []
+
+    # 1. JSON-LD structured data (most reliable when present)
+    jobs = _extract_json_ld_jobpostings(html, base_url)
+    if jobs:
+        return jobs
+
+    # 2. Next.js hydration blob
+    for raw in re.findall(
+        r'<script[^>]+id=["\']__NEXT_DATA__["\'][^>]*>(.*?)</script>',
+        html, flags=re.I | re.S,
+    ):
+        try:
+            jobs.extend(_scan_for_jobs(json.loads(raw.strip()), base_url))
+        except Exception:
+            pass
+    if jobs:
+        return jobs
+
+    # 3. Nuxt 3: <script id="__NUXT_DATA__" type="application/json">
+    for raw in re.findall(
+        r'<script[^>]+id=["\']__NUXT_DATA__["\'][^>]*>(.*?)</script>',
+        html, flags=re.I | re.S,
+    ):
+        try:
+            jobs.extend(_scan_for_jobs(json.loads(raw.strip()), base_url))
+        except Exception:
+            pass
+    if jobs:
+        return jobs
+
+    # 4. Nuxt 2: window.__NUXT__ = {...};
+    for m in re.finditer(r'window\.__NUXT__\s*=\s*(\{.*?\})\s*(?:;|</script>)', html, re.S):
+        try:
+            jobs.extend(_scan_for_jobs(json.loads(m.group(1)), base_url))
+        except Exception:
+            pass
+    if jobs:
+        return jobs
+
+    # 5. Generic application/json script tags
+    for raw in re.findall(
+        r'<script[^>]+type=["\']application/json["\'][^>]*>(.*?)</script>',
+        html, flags=re.I | re.S,
+    ):
+        try:
+            jobs.extend(_scan_for_jobs(json.loads(raw.strip()), base_url))
+        except Exception:
+            pass
+
+    return jobs
+
+
+def fetch_browser_site(url: str, fetch_options: Dict[str, Any] | None = None) -> FetchResult:
+    """Fetch a careers page using headless Playwright — handles React/Vue/Next.js/Nuxt SPAs.
+
+    Use this provider (``"browser_site"``) for any source whose static HTML is empty
+    because the page is client-side rendered.  Falls back to a descriptive warning
+    when Playwright is not installed so the rest of the pipeline is unaffected.
+    """
+    provider = "browser_site"
+    fetch_options = fetch_options or {}
+    timeout_ms = int(
+        fetch_options.get("browser_timeout_seconds",
+                          fetch_options.get("timeout_seconds", 30)) * 1000
+    )
+    wait_until = fetch_options.get("browser_wait_until", "networkidle")
+
+    html, issues = _playwright_get_text(url, timeout_ms=timeout_ms, wait_until=wait_until)
+    result = FetchResult(provider=provider, issues=issues)
+
+    if not html:
+        return result
+
+    jobs = _extract_jobs_from_rendered_html(html, url)
+
+    if not jobs:
+        # Follow career/recruit links found in the rendered page
+        hrefs = re.findall(r'href=["\']([^"\']+)["\']', html, flags=re.I)
+        candidate_links: List[str] = []
+        keywords = ("job", "jobs", "career", "careers", "recruit", "position",
+                    "opening", "採用", "求人", "キャリア")
+        for href in hrefs:
+            if any(k in href.lower() for k in keywords):
+                full = urljoin(url, href)
+                if full != url and full not in candidate_links:
+                    candidate_links.append(full)
+
+        max_follow = fetch_options.get("max_follow_links", 3)
+        for link in candidate_links[:max_follow]:
+            child_html, child_issues = _playwright_get_text(
+                link, timeout_ms=timeout_ms, wait_until=wait_until,
+            )
+            result.issues.extend(child_issues)
+            if child_html:
+                jobs.extend(_extract_jobs_from_rendered_html(child_html, link))
+
+    if not jobs:
+        result.issues.append(FetchIssue(
+            provider=provider,
+            source_ref=url,
+            message=(
+                "Browser rendered the page but found no structured job data. "
+                "The site may use a fully custom listing format or require login."
+            ),
+            severity="warning",
+            retryable=False,
+        ))
+
+    result.jobs = jobs
+    return result
+
+
 def fetch_company_site(url: str, fetch_options: Dict[str, Any] | None = None) -> FetchResult:
     provider = "company_site"
     fetch_options = fetch_options or {}
@@ -515,63 +711,53 @@ def _scan_for_jobs(data: Any, source_url: str) -> List[Dict[str, Any]]:
     return jobs
 
 
-def fetch_japan_dev(fetch_options: Dict[str, Any] | None = None) -> FetchResult:
-    """Fetch jobs from japan-dev.com.
+def _spa_fetch_with_browser_fallback(
+    url: str,
+    provider: str,
+    fetch_options: Dict[str, Any],
+    spa_hint: str = "",
+) -> FetchResult:
+    """Shared helper: static fetch → extract → browser fallback if empty.
 
-    japan-dev.com is a Nuxt/Vue SPA backed by Algolia search.  This fetcher
-    attempts to extract SSR-hydrated job data injected by the server (Nuxt 2
-    ``window.__NUXT__`` or Nuxt 3 ``<script id="__NUXT_DATA__">`` patterns)
-    and falls back to JSON-LD extraction.  Results may be empty when the page
-    is fully client-side rendered; in that case a descriptive warning is
-    emitted so callers can take alternative action (e.g. a headless browser).
+    1. Fetch static HTML via requests.
+    2. Run _extract_jobs_from_rendered_html (covers JSON-LD, Next/Nuxt blobs, etc.).
+    3. If still empty and Playwright is available, retry with headless browser.
     """
-    provider = "japan_dev"
-    fetch_options = fetch_options or {}
-    url = "https://japan-dev.com/jobs"
+    timeout = fetch_options.get("timeout_seconds", 15)
+    retries = fetch_options.get("max_retries", 1)
+    backoff = fetch_options.get("retry_backoff_seconds", 0.5)
+
     html, issues = _safe_get_text(
-        url,
-        provider=provider,
-        timeout_seconds=fetch_options.get("timeout_seconds", 15),
-        max_retries=fetch_options.get("max_retries", 1),
-        retry_backoff_seconds=fetch_options.get("retry_backoff_seconds", 0.5),
+        url, provider=provider,
+        timeout_seconds=timeout, max_retries=retries, retry_backoff_seconds=backoff,
     )
     result = FetchResult(provider=provider, issues=issues)
-    if not html:
-        return result
 
     jobs: List[Dict[str, Any]] = []
-
-    # Nuxt 3: <script id="__NUXT_DATA__" type="application/json">…</script>
-    for raw in re.findall(
-        r'<script[^>]+id=["\']__NUXT_DATA__["\'][^>]*>(.*?)</script>',
-        html,
-        flags=re.I | re.S,
-    ):
-        try:
-            jobs.extend(_scan_for_jobs(json.loads(raw.strip()), url))
-        except Exception:
-            pass
-
-    # Nuxt 2: window.__NUXT__ = {…};
-    if not jobs:
-        for m in re.finditer(r'window\.__NUXT__\s*=\s*(\{.*?\})\s*(?:;|</script>)', html, re.S):
-            try:
-                jobs.extend(_scan_for_jobs(json.loads(m.group(1)), url))
-            except Exception:
-                pass
-
-    # Generic JSON-LD fallback
-    if not jobs:
-        jobs.extend(_extract_json_ld_jobpostings(html, url))
+    if html:
+        jobs = _extract_jobs_from_rendered_html(html, url)
 
     if not jobs:
+        # Attempt headless browser fallback
+        timeout_ms = int(fetch_options.get("browser_timeout_seconds", 30) * 1000)
+        wait_until = fetch_options.get("browser_wait_until", "networkidle")
+        browser_html, browser_issues = _playwright_get_text(
+            url, timeout_ms=timeout_ms, wait_until=wait_until,
+        )
+        # Only surface Playwright issues when the static fetch also yielded nothing
+        result.issues.extend(browser_issues)
+        if browser_html:
+            jobs = _extract_jobs_from_rendered_html(browser_html, url)
+
+    if not jobs:
+        hint = f" ({spa_hint})" if spa_hint else ""
         result.issues.append(FetchIssue(
             provider=provider,
             source_ref=url,
             message=(
-                "japan-dev.com appears to be fully client-side rendered via Algolia; "
-                "no job data extracted from static HTML. "
-                "A headless browser is required for reliable extraction."
+                f"{provider}{hint}: no job data found in static HTML or browser render. "
+                "The site may be fully JS-rendered with Algolia/custom APIs — "
+                "consider adding it as a 'browser_site' source with specific subpages."
             ),
             severity="warning",
             retryable=False,
@@ -579,147 +765,69 @@ def fetch_japan_dev(fetch_options: Dict[str, Any] | None = None) -> FetchResult:
 
     result.jobs = jobs
     return result
+
+
+def fetch_japan_dev(fetch_options: Dict[str, Any] | None = None) -> FetchResult:
+    """Fetch jobs from japan-dev.com (Nuxt/Algolia SPA).
+
+    Attempts static extraction first (Nuxt hydration blobs, JSON-LD),
+    then falls back to headless browser rendering when Playwright is installed.
+    """
+    fetch_options = fetch_options or {}
+    return _spa_fetch_with_browser_fallback(
+        "https://japan-dev.com/jobs",
+        provider="japan_dev",
+        fetch_options=fetch_options,
+        spa_hint="Nuxt/Algolia SPA",
+    )
 
 
 def fetch_gaijinpot(fetch_options: Dict[str, Any] | None = None) -> FetchResult:
     """Fetch jobs from GaijinPot Jobs (jobs.gaijinpot.com).
 
-    GaijinPot targets foreign workers in Japan and commonly lists positions
-    with JLPT N2/N3 requirements — a good fit for Chinese speakers who don't
-    yet hold N1.  The site is partially client-side rendered; results may be
-    sparse without a headless browser.
+    GaijinPot targets foreign workers in Japan with JLPT N2/N3 roles —
+    a strong source for Chinese speakers in transition.
+    Attempts static extraction first, then headless browser fallback.
     """
-    provider = "gaijinpot"
     fetch_options = fetch_options or {}
+    provider = "gaijinpot"
     base_url = "https://jobs.gaijinpot.com"
-    search_url = f"{base_url}/job/index/search"
 
-    # Try the JSON search endpoint first
+    # Try the JSON search endpoint first (occasionally returns structured data)
     data, issues = _safe_get_json(
-        search_url,
+        f"{base_url}/job/index/search",
         provider=provider,
         timeout_seconds=fetch_options.get("timeout_seconds", 15),
         max_retries=fetch_options.get("max_retries", 1),
         retry_backoff_seconds=fetch_options.get("retry_backoff_seconds", 0.5),
     )
-    result = FetchResult(provider=provider, issues=issues)
-
     if data:
-        jobs = _scan_for_jobs(data, search_url)
+        jobs = _scan_for_jobs(data, base_url)
         if jobs:
-            result.jobs = jobs
-            return result
+            return FetchResult(provider=provider, jobs=jobs, issues=issues)
 
-    # Fall back to HTML scraping of the listings page
-    html, html_issues = _safe_get_text(
+    return _spa_fetch_with_browser_fallback(
         base_url,
         provider=provider,
-        timeout_seconds=fetch_options.get("timeout_seconds", 15),
-        max_retries=fetch_options.get("max_retries", 1),
-        retry_backoff_seconds=fetch_options.get("retry_backoff_seconds", 0.5),
+        fetch_options=fetch_options,
+        spa_hint="Django + client-side JS",
     )
-    result.issues.extend(html_issues)
-
-    jobs: List[Dict[str, Any]] = []
-    if html:
-        jobs.extend(_extract_json_ld_jobpostings(html, base_url))
-        if not jobs:
-            for raw in re.findall(
-                r'<script[^>]+type=["\']application/json["\'][^>]*>(.*?)</script>',
-                html,
-                flags=re.I | re.S,
-            ):
-                try:
-                    jobs.extend(_scan_for_jobs(json.loads(raw.strip()), base_url))
-                except Exception:
-                    pass
-
-    if not jobs:
-        result.issues.append(FetchIssue(
-            provider=provider,
-            source_ref=base_url,
-            message=(
-                "GaijinPot Jobs appears to be client-side rendered; "
-                "no job data extracted from static HTML. "
-                "A headless browser is required for reliable extraction."
-            ),
-            severity="warning",
-            retryable=False,
-        ))
-
-    result.jobs = jobs
-    return result
 
 
 def fetch_tokyodev(fetch_options: Dict[str, Any] | None = None) -> FetchResult:
     """Fetch jobs from TokyoDev (tokyodev.com/jobs).
 
-    TokyoDev lists developer positions in Japan that are open to non-Japanese
-    speakers.  Many roles specify English as the working language and do not
-    require Japanese above N2, making it a strong source for Chinese-speaking
-    engineers.
+    Lists developer roles open to non-Japanese speakers; many positions require
+    only English.  Strong source for Chinese-speaking engineers at N2 or below.
+    Attempts static Next.js extraction first, then headless browser fallback.
     """
-    provider = "tokyodev"
     fetch_options = fetch_options or {}
-    base_url = "https://www.tokyodev.com"
-    jobs_url = f"{base_url}/jobs"
-
-    html, issues = _safe_get_text(
-        jobs_url,
-        provider=provider,
-        timeout_seconds=fetch_options.get("timeout_seconds", 15),
-        max_retries=fetch_options.get("max_retries", 1),
-        retry_backoff_seconds=fetch_options.get("retry_backoff_seconds", 0.5),
+    return _spa_fetch_with_browser_fallback(
+        "https://www.tokyodev.com/jobs",
+        provider="tokyodev",
+        fetch_options=fetch_options,
+        spa_hint="Next.js/React SPA",
     )
-    result = FetchResult(provider=provider, issues=issues)
-
-    if not html:
-        return result
-
-    jobs: List[Dict[str, Any]] = []
-
-    # Next.js / React hydration blobs
-    for raw in re.findall(
-        r'<script[^>]+id=["\']__NEXT_DATA__["\'][^>]*>(.*?)</script>',
-        html,
-        flags=re.I | re.S,
-    ):
-        try:
-            jobs.extend(_scan_for_jobs(json.loads(raw.strip()), jobs_url))
-        except Exception:
-            pass
-
-    # Generic JSON-LD fallback
-    if not jobs:
-        jobs.extend(_extract_json_ld_jobpostings(html, jobs_url))
-
-    # Generic application/json script tags
-    if not jobs:
-        for raw in re.findall(
-            r'<script[^>]+type=["\']application/json["\'][^>]*>(.*?)</script>',
-            html,
-            flags=re.I | re.S,
-        ):
-            try:
-                jobs.extend(_scan_for_jobs(json.loads(raw.strip()), jobs_url))
-            except Exception:
-                pass
-
-    if not jobs:
-        result.issues.append(FetchIssue(
-            provider=provider,
-            source_ref=jobs_url,
-            message=(
-                "TokyoDev appears to be client-side rendered; "
-                "no job data extracted from static HTML. "
-                "A headless browser is required for reliable extraction."
-            ),
-            severity="warning",
-            retryable=False,
-        ))
-
-    result.jobs = jobs
-    return result
 
 
 def fetch_from_source(source: Dict[str, Any], fetch_options: Dict[str, Any] | None = None) -> FetchResult:
@@ -734,6 +842,8 @@ def fetch_from_source(source: Dict[str, Any], fetch_options: Dict[str, Any] | No
         result = fetch_ashby(source["board"], fetch_options=fetch_options)
     elif provider == "company_site":
         result = fetch_company_site(source["url"], fetch_options=fetch_options)
+    elif provider == "browser_site":
+        result = fetch_browser_site(source["url"], fetch_options=fetch_options)
     elif provider == "japan_dev":
         result = fetch_japan_dev(fetch_options=fetch_options)
     elif provider == "gaijinpot":

@@ -55,7 +55,17 @@ def format_job_report(profile: Dict[str, object], jobs: List[Dict[str, object]],
 
     lines.append("## 推荐岗位")
     for idx, job in enumerate(jobs, start=1):
-        lines.append(f"### {idx}. {job.get('company', 'Unknown')} — {job.get('title', 'Untitled')}")
+        # Build badges
+        badges = []
+        if job.get("chinese_advantage"):
+            badges.append("中国語優遇")
+        if job.get("is_bridge_se"):
+            badges.append("Bridge SE")
+        if job.get("required_jlpt"):
+            badges.append(f"日語{job['required_jlpt']}+")
+        badge_str = f" [{' | '.join(badges)}]" if badges else ""
+
+        lines.append(f"### {idx}. {job.get('company', 'Unknown')} — {job.get('title', 'Untitled')}{badge_str}")
         lines.append(f"- 地点：{job.get('location', 'Unknown')}")
         lines.append(f"- 来源：{job.get('source', 'Unknown')}")
         if job.get("url"):

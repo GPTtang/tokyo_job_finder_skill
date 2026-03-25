@@ -4,40 +4,270 @@
   "sources": [
 
     {
-      "_comment": "【推荐·华人友好】GaijinPot Jobs：专门面向在日外国人的求职平台，常见N2/N3要求岗位",
-      "provider": "gaijinpot",
+      "_section": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "_label":   "【第一优先】中国系 IT 乙方 / 中国人経営 IT 企業（日中ブリッジ特化）",
+      "_desc":    "中文母语是直接竞争优势；日语要求相对低；Bridge SE 薪资 ¥450万〜1000万",
+      "_section_end": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    },
+
+    {
+      "_comment": "【中国系SIer·強推】NEUSOFT Japan（東軟日本）：沈阳母公司，Bridge SE/PM直接招募，车载/組込/Web",
+      "_comment2": "careers: https://jp.neusoft.com/about/採用情報/募集職種/ | Bridge SE ¥450万〜1000万 | 資格取得支援¥200万",
+      "provider": "company_site",
+      "url": "https://jp.neusoft.com/about/%E6%8E%A1%E7%94%A8%E6%83%85%E5%A0%B1/%E5%8B%9F%E9%9B%86%E8%81%B7%E7%A8%AE/",
       "filters": {
-        "keywords": ["engineer", "developer", "software", "N2", "中国語", "Python", "Java"],
+        "keywords": ["ブリッジSE", "Bridge", "SE", "PM", "エンジニア", "組込", "Java", "C#", ".NET", "C++", "Python", "オフショア"]
+      }
+    },
+
+    {
+      "_comment": "【中国系SIer·強推】GienTech Japan（文思海辉·旧Pactera）：中国最大IT服务商之一，DX/金融/保险/SAP，日中英三语",
+      "_comment2": "careers: https://jp.gientech.com/careers/entry/index.htm | SE/PM/DX consultant | 联系: ptjpta@gientech.com",
+      "provider": "company_site",
+      "url": "https://jp.gientech.com/careers/aboutptj/index.htm",
+      "filters": {
+        "keywords": ["SE", "PM", "ブリッジ", "エンジニア", "コンサルタント", "DX", "SAP", "Java", "C#", "オフショア", "中国語"]
+      }
+    },
+
+    {
+      "_comment": "【中国系SIer·強推】中軟東京（中软国际日本）：北京母公司6万人，SES/Bridge SE/AI/WeChat，明确日中双语运营",
+      "_comment2": "careers: https://chinasoft-tokyo.co.jp/ | SES/クラウド/AI開発 | offshore to 北京/大连",
+      "provider": "company_site",
+      "url": "https://chinasoft-tokyo.co.jp/",
+      "filters": {
+        "keywords": ["SE", "エンジニア", "ブリッジ", "クラウド", "AI", "Java", "C#", "Python", "オフショア", "中国語"]
+      }
+    },
+
+    {
+      "_comment": "【中国系SIer】Beyondsoft Japan（博彦科技）：北京母公司，日本500人，Big Data/AI/Azure/AWS，¥6M+",
+      "_comment2": "careers: https://www.beyondsoft.com/jp/en/ | IT Consultant/SE/PM | 品川Osaki HQ",
+      "provider": "company_site",
+      "url": "https://www.beyondsoft.com/jp/en/",
+      "filters": {
+        "keywords": ["engineer", "consultant", "PM", "project manager", "data", "AI", "Azure", "AWS", "Java", "Python"]
+      }
+    },
+
+    {
+      "_comment": "【中国系SIer】iSoftStone Japan（软通动力日本）：北京母公司8万人，Java/.NET/SAP/Oracle，東京千代田",
+      "_comment2": "careers: https://www.isoftstone.jp/recruitment.html | SE/PM/Consultant | ¥応相談",
+      "provider": "company_site",
+      "url": "https://www.isoftstone.jp/recruitment.html",
+      "filters": {
+        "keywords": ["SE", "PM", "プロジェクトマネージャー", "エンジニア", "Java", "C#", ".NET", "SAP", "Oracle", "COBOL"]
+      }
+    },
+
+    {
+      "_comment": "【中国系SIer】日本瑞友テクノロジー（北京瑞友科技日本）：NTT Data JV，製造/流通/通信，残業20h未満，120日+休暇",
+      "_comment2": "careers: https://www.rayoo.co.jp/recruting/ | Consultant/SE/PM/PL | 台東区東京",
+      "provider": "company_site",
+      "url": "https://www.rayoo.co.jp/recruting/",
+      "filters": {
+        "keywords": ["コンサルタント", "SE", "PM", "PL", "エンジニア", "Java", "Python", "AI", "IoT", "BigData", "クラウド"]
+      }
+    },
+
+    {
+      "_comment": "【中国系SIer】Wicresoft Japan（微创软件日本·旧Microsoft上海JV）：Microsoftソリューション特化，SES/オフショア",
+      "_comment2": "careers: https://www.wicresoft.co.jp/recruit/ | ※2025年4月親会社中国事業停止，日本法人の状況要確認",
+      "provider": "company_site",
+      "url": "https://www.wicresoft.co.jp/recruit/",
+      "filters": {
+        "keywords": ["SE", "エンジニア", "Microsoft", "Azure", "SharePoint", ".NET", "C#", "SES", "オフショア"]
+      }
+    },
+
+    {
+      "_comment": "【中国人経営·友好】安信株式会社（中国人創業·大連出身）：SES特化，社員55名/50エンジニア，中国人35名，WeChat採用対応",
+      "_comment2": "careers: https://an-sin.co.jp/blog-1.html | 全経験歓迎 | 連絡: WeChat ansin201412 / 担当: 王艶亜 | N2+",
+      "provider": "company_site",
+      "url": "https://an-sin.co.jp/blog-1.html",
+      "filters": {
+        "keywords": ["SE", "PG", "エンジニア", "Java", "C#", "Python", "AWS", "SES", "金融", "公共", "交通"]
+      }
+    },
+
+    {
+      "_comment": "【中国人経営】SMHC株式会社（中国人CEO·新宿）：SI/インフラ/AI医療，70%が未経験OK，多文化グローバル志向",
+      "_comment2": "careers: https://www.recruit.smhc.co.jp/ | Dev/Infra Eng | AWS/Azure/AI | 新宿",
+      "provider": "company_site",
+      "url": "https://www.recruit.smhc.co.jp/",
+      "filters": {
+        "keywords": ["エンジニア", "開発", "インフラ", "AI", "AWS", "Azure", "Java", "Python", "クラウド"]
+      }
+    },
+
+    {
+      "_section": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "_label":   "【第二优先】中国大手テック企業の日本法人（製品/プラットフォーム系）",
+      "_desc":    "製品開発・営業・BD中心；技術職は日本語必須が多いが中文で本社連携優遇",
+      "_section_end": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    },
+
+    {
+      "_comment": "【中国系テック】ByteDance Japan / TikTok Japan（字节跳动日本）：Greenhouse使用，中国語→社内連携優遇",
+      "_comment2": "careers: https://joinbytedance.com/ | Ops/Sales/Eng | N2〜ビジネス日本語",
+      "provider": "greenhouse",
+      "token": "bytedance",
+      "filters": {
+        "keywords": ["engineer", "software", "backend", "data", "AI", "product", "machine learning"],
+        "locations": ["Tokyo", "Japan", "東京"]
+      }
+    },
+
+    {
+      "_comment": "【中国系テック】Huawei Japan（华为技术日本）：SW/HW Eng·R&D，中国語必須のFinance/物流職あり，43求人",
+      "_comment2": "careers: https://hrmos.co/pages/huawei | SW/Sensor/AI Eng | ビジネス日本語+中国語で優遇",
+      "provider": "company_site",
+      "url": "https://hrmos.co/pages/huawei",
+      "filters": {
+        "keywords": ["エンジニア", "engineer", "software", "developer", "AI", "Python", "Java", "C++", "cloud", "クラウド", "中国語"]
+      }
+    },
+
+    {
+      "_comment": "【中国系テック】Baidu Japan（百度日本）：Simeji開発，AI/NLP/ML Eng，PdM，日本市場特化",
+      "_comment2": "careers: https://www.baidu.jp/recruit/ | AI/ML/NLP Eng, PdM, Sales",
+      "provider": "company_site",
+      "url": "https://www.baidu.jp/recruit/",
+      "filters": {
+        "keywords": ["エンジニア", "engineer", "AI", "機械学習", "NLP", "Python", "データ", "プロダクト", "product"]
+      }
+    },
+
+    {
+      "_comment": "【中国系テック】Alibaba Cloud Japan（阿里云日本）：Solutions Architect/BD/Sales，中文→杭州連携優遇",
+      "_comment2": "careers: https://www.alibaba.co.jp/corp/recruit/ | SA/BD/Sales | ビジネス日本語",
+      "provider": "company_site",
+      "url": "https://www.alibaba.co.jp/corp/recruit/",
+      "filters": {
+        "keywords": ["エンジニア", "engineer", "architect", "cloud", "クラウド", "Azure", "AWS", "solution", "sales", "BD"]
+      }
+    },
+
+    {
+      "_comment": "【中国系テック】Tencent Japan（腾讯日本）：ゲーム/WeChat Pay/BD，中国語→深圳連携優遇，虎ノ門/渋谷",
+      "_comment2": "careers: https://tencentjapan.com/career/ | Game Analyst/BD/Design | N2〜ビジネス",
+      "provider": "company_site",
+      "url": "https://tencentjapan.com/career/",
+      "filters": {
+        "keywords": ["engineer", "analyst", "developer", "game", "AI", "cloud", "BD", "business development", "product"]
+      }
+    },
+
+    {
+      "_section": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "_label":   "【第三优先】日本国内 中国オフショア開発 甲方（日本企業·発注側）",
+      "_desc":    "日本系SIer・コンサル；中文は加点要素；日語N2+推奨",
+      "_section_end": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    },
+
+    {
+      "_comment": "【甲方·強推】J&Cカンパニー：大連拠点，PM職は10人以上マネジメント必須，中文優遇，リモート可",
+      "_comment2": "careers: https://www.jcc-ltd.com/recruit/list/ | PM: ¥500万〜800万 | SE: ¥400万〜600万",
+      "provider": "company_site",
+      "url": "https://www.jcc-ltd.com/recruit/list/",
+      "filters": {
+        "keywords": ["PM", "SE", "PG", "エンジニア", "プロジェクトマネージャー", "開発", "DX", "Java", "C#", ".NET", "Vue"]
+      }
+    },
+
+    {
+      "_comment": "【甲方·強推】グローバル・アスピレーションズ：Azure/SQL Server特化，中国語明記優遇，残業10h未満",
+      "_comment2": "careers: https://www.global-asp.co.jp/recruit/ | 開発: ¥360万〜720万 | 銀座",
+      "provider": "company_site",
+      "url": "https://www.global-asp.co.jp/recruit/",
+      "filters": {
+        "keywords": ["エンジニア", "開発", "インフラ", "Azure", "C#", "Java", "Python", "SQL Server", "中国語"]
+      }
+    },
+
+    {
+      "_comment": "【甲方·緊急】共達 (CNC Systems)：日中ITブリッジ，大連/上海/成都拠点，PMO緊急募集中",
+      "_comment2": "careers: https://www.cncsys.co.jp/recruit/guideline/urgent-recruit/ | N2+推奨 | PMO緊急",
+      "provider": "company_site",
+      "url": "https://www.cncsys.co.jp/recruit/guideline/urgent-recruit/",
+      "filters": {
+        "keywords": ["PM", "PMO", "SE", "エンジニア", "オフショア", "モダナイゼーション", "Dynamics", "C#", "Java"]
+      }
+    },
+
+    {
+      "_comment": "【甲方】富士ソフト：日本最大独立SIer，116中途職，C#/.NET/Java直接記載，PM昇進パスあり",
+      "_comment2": "careers: https://www.fsi.co.jp/recruit/ | axol: https://job.axol.jp/qd/c/fujisoft/job/search | ¥448万〜895万",
+      "provider": "company_site",
+      "url": "https://www.fsi.co.jp/recruit/",
+      "filters": {
+        "keywords": ["エンジニア", "開発", "C#", ".NET", "Java", "Azure", "インフラ", "社内SE", "アーキテクト"]
+      }
+    },
+
+    {
+      "_comment": "【甲方】ケネス：外国語スキル明記優遇，開発/インフラ兼任，¥840万上限，JLPT無記載",
+      "_comment2": "careers: https://www.kenes.co.jp/recruitment.html | 開発・インフラ・組込系 ¥420万〜840万",
+      "provider": "company_site",
+      "url": "https://www.kenes.co.jp/recruitment.html",
+      "filters": {
+        "keywords": ["エンジニア", "開発", "インフラ", "SE", "Java", "C#", ".NET", "オフショア", "外国語"]
+      }
+    },
+
+    {
+      "_comment": "【甲方】ネットエンジン：Java/VB/C# 明記，ERP/IoT案件，中小規模で給与交渉しやすい",
+      "_comment2": "careers: https://netengine.co.jp/recruit01.php | 中途給与面議",
+      "provider": "company_site",
+      "url": "https://netengine.co.jp/recruit01.php",
+      "filters": {
+        "keywords": ["エンジニア", "SE", "Java", "C#", "VB", "ERP", "SAP", "Salesforce", "IoT", "開発"]
+      }
+    },
+
+    {
+      "_section": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "_label":   "【第四优先】在日外国人向け求職プラットフォーム",
+      "_section_end": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    },
+
+    {
+      "_comment": "【推荐·华人友好】GaijinPot Jobs：专门面向在日外国人，N2/N3岗位多 | browser_site=JS渲染完整版",
+      "_comment2": "⚡ browser_site 需要: pip install playwright && playwright install chromium",
+      "provider": "browser_site",
+      "url": "https://jobs.gaijinpot.com",
+      "filters": {
+        "keywords": ["engineer", "developer", "software", "N2", "中国語", "Python", "Java", "C#", ".NET", "AI"],
         "locations": ["Tokyo", "東京", "Japan", "Remote"]
       }
     },
 
     {
-      "_comment": "【推荐·英语友好】TokyoDev：面向开发者，许多岗位工作语言为英语，日语N2以下可申请",
-      "provider": "tokyodev",
+      "_comment": "【推荐·英语友好】TokyoDev：开发者专属，英语工作环境，N2以下可申请 | browser_site=完整抓取",
+      "_comment2": "⚡ browser_site 需要: pip install playwright && playwright install chromium",
+      "provider": "browser_site",
+      "url": "https://www.tokyodev.com/jobs",
       "filters": {
-        "keywords": ["engineer", "developer", "backend", "frontend", "fullstack"],
+        "keywords": ["engineer", "developer", "backend", "fullstack", "AI", "Java", "Python", "C#"],
         "locations": ["Tokyo", "Japan", "Remote"]
       }
     },
 
     {
-      "_comment": "【推荐】Japan Dev：在日技术岗聚合平台，含国际化公司和日语友好岗位",
-      "provider": "japan_dev",
+      "_comment": "【推荐】Japan Dev：在日技术岗聚合平台 | browser_site=绕过Algolia客户端渲染",
+      "_comment2": "⚡ browser_site 需要: pip install playwright && playwright install chromium",
+      "provider": "browser_site",
+      "url": "https://japan-dev.com/jobs",
       "filters": {
-        "keywords": ["engineer", "developer", "software", "N2", "JLPT"],
+        "keywords": ["engineer", "developer", "software", "N2", "JLPT", "Java", "Python", ".NET"],
         "locations": ["Tokyo", "Japan", "Remote"]
       }
     },
 
     {
-      "_comment": "【华人公司·Greenhouse】ByteDance/TikTok Japan：中国背景公司，中文是加分项，日语N2可",
-      "provider": "greenhouse",
-      "token": "bytedance",
-      "filters": {
-        "keywords": ["engineer", "software", "backend", "data"],
-        "locations": ["Tokyo", "Japan", "東京"]
-      }
+      "_section": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "_label":   "【第五优先】外資系テック企業（ATS経由）",
+      "_section_end": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     },
 
     {
@@ -45,7 +275,7 @@
       "provider": "greenhouse",
       "token": "smartnews",
       "filters": {
-        "keywords": ["engineer", "developer"],
+        "keywords": ["engineer", "developer", "backend", "data"],
         "locations": ["Tokyo", "Japan"]
       }
     },
@@ -55,7 +285,7 @@
       "provider": "lever",
       "company": "mercari",
       "filters": {
-        "keywords": ["engineer", "developer", "software"],
+        "keywords": ["engineer", "developer", "software", "backend"],
         "locations": ["Tokyo", "Japan"]
       }
     },
@@ -65,23 +295,23 @@
       "provider": "ashby",
       "board": "moneyforward",
       "filters": {
-        "keywords": ["engineer", "developer"],
+        "keywords": ["engineer", "developer", "backend"],
         "locations": ["Tokyo", "Japan"]
       }
     },
 
     {
-      "_comment": "【外资·Ashby】Woven by Toyota：丰田旗下自动驾驶，国际环境，英语为主",
+      "_comment": "【外资·Ashby】Woven by Toyota：丰田旗下，国际环境，英语为主",
       "provider": "ashby",
       "board": "woven-by-toyota",
       "filters": {
-        "keywords": ["engineer", "software", "autonomous", "robotics"],
+        "keywords": ["engineer", "software"],
         "locations": ["Tokyo", "Japan"]
       }
     },
 
     {
-      "_comment": "【外资·Greenhouse】Indeed Japan：确认岗位N2要求，外资氛围，中国人多",
+      "_comment": "【外资·Greenhouse】Indeed Japan：外资氛围，中国人多",
       "provider": "greenhouse",
       "token": "indeed",
       "filters": {
@@ -105,7 +335,7 @@
       "provider": "company_site",
       "url": "https://www.cyberagent.co.jp/careers/",
       "filters": {
-        "keywords": ["エンジニア", "engineer", "developer", "N2"],
+        "keywords": ["エンジニア", "engineer", "AI", "機械学習"],
         "locations": ["Tokyo", "渋谷", "東京"]
       }
     },
@@ -118,6 +348,12 @@
         "keywords": ["engineer", "developer", "software"],
         "locations": ["Tokyo", "Japan"]
       }
+    },
+
+    {
+      "_section": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "_label":   "【通用模板】直接复制修改 token/company/board/url 即可",
+      "_section_end": "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     },
 
     {

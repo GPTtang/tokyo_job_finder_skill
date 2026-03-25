@@ -8,7 +8,12 @@ SUPPORTED_PROVIDERS = {
     "greenhouse": ["token"],
     "lever": ["company"],
     "ashby": ["board"],
+    # Static HTML fetch + JSON-LD extraction (fast, no browser required)
     "company_site": ["url"],
+    # Headless Playwright fetch — use for SPA/React/Vue/Next.js/Nuxt career pages
+    # Requires: pip install playwright && playwright install chromium
+    "browser_site": ["url"],
+    # Built-in aggregators (static fetch + automatic browser fallback)
     "japan_dev": [],
     "gaijinpot": [],
     "tokyodev": [],
@@ -22,10 +27,14 @@ SUPPORTED_FILTER_FIELDS = {
 }
 
 DEFAULT_FETCH_OPTIONS: Dict[str, Any] = {
+    # requests-based fetch
     "timeout_seconds": 15,
     "max_retries": 1,
     "retry_backoff_seconds": 0.5,
     "max_follow_links": 3,
+    # Playwright / browser_site options
+    "browser_timeout_seconds": 30,   # page load timeout for headless browser
+    "browser_wait_until": "networkidle",  # "load" | "domcontentloaded" | "networkidle"
 }
 
 
@@ -93,6 +102,7 @@ def validate_config(config: Dict[str, Any]) -> Tuple[List[str], List[str]]:
         retries = fetch_options.get("max_retries")
         backoff = fetch_options.get("retry_backoff_seconds")
         max_follow = fetch_options.get("max_follow_links")
+        browser_timeout = fetch_options.get("browser_timeout_seconds")
         if not isinstance(timeout, (int, float)) or timeout <= 0:
             errors.append("`fetch_options.timeout_seconds` 必须是大于 0 的数字。")
         if not isinstance(retries, int) or retries < 0:
@@ -101,6 +111,8 @@ def validate_config(config: Dict[str, Any]) -> Tuple[List[str], List[str]]:
             errors.append("`fetch_options.retry_backoff_seconds` 必须是大于等于 0 的数字。")
         if not isinstance(max_follow, int) or max_follow < 0:
             errors.append("`fetch_options.max_follow_links` 必须是大于等于 0 的整数。")
+        if browser_timeout is not None and (not isinstance(browser_timeout, (int, float)) or browser_timeout <= 0):
+            errors.append("`fetch_options.browser_timeout_seconds` 必须是大于 0 的数字。")
 
     for i, source in enumerate(sources):
         if not isinstance(source, dict):

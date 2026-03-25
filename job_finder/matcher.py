@@ -21,9 +21,10 @@ _BRIDGE_SE_SIGNALS = [
 # JLPT requirement patterns in job text
 _JLPT_REQUIREMENT_MAP = {
     "n1": "N1", "jlpt n1": "N1", "日本語n1": "N1", "n1以上": "N1",
+    "native japanese": "N1", "日本語ネイティブ": "N1",
     "n2": "N2", "jlpt n2": "N2", "日本語n2": "N2", "n2以上": "N2",
-    "n3": "N3", "jlpt n3": "N3", "n3以上": "N3",
     "ビジネス日本語": "N2", "business japanese": "N2",
+    "n3": "N3", "jlpt n3": "N3", "n3以上": "N3",
     "日常会話": "N3", "conversational japanese": "N3",
 }
 
@@ -75,7 +76,8 @@ def _detect_jlpt_requirement(job_text: str) -> str | None:
             found.append(level)
     if not found:
         return None
-    # Return the lowest (most lenient) requirement found
+    # Return the strictest (most demanding) requirement found so the penalty is
+    # applied correctly when a job signals e.g. both N2 and N3 in the same text.
     return min(found, key=lambda x: _JLPT_RANK[x])
 
 
@@ -121,7 +123,7 @@ def score_job(profile: Dict[str, object], job: Dict[str, object]) -> Dict[str, o
 
     # ── Final score ───────────────────────────────────────────────────
     base = 0.5 * skill_match + 0.3 * title_match + 0.2 * location_match
-    match_score = round(min(1.0, base + chinese_bonus + bridge_bonus) - jlpt_penalty, 3)
+    match_score = round(max(0.0, min(1.0, base + chinese_bonus + bridge_bonus) - jlpt_penalty), 3)
 
     # ── Reasons ───────────────────────────────────────────────────────
     reasons = []

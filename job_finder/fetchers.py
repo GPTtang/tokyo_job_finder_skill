@@ -10,6 +10,38 @@ from urllib.parse import urljoin
 
 import requests
 
+
+# ---------------------------------------------------------------------------
+# Data classes — defined first so every function below can reference them
+# ---------------------------------------------------------------------------
+
+@dataclass
+class FetchIssue:
+    provider: str
+    message: str
+    source_ref: str = ""
+    severity: str = "warning"
+    retryable: bool = False
+    details: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class FetchResult:
+    provider: str
+    jobs: List[Dict[str, Any]] = field(default_factory=list)
+    issues: List[FetchIssue] = field(default_factory=list)
+
+    @property
+    def ok(self) -> bool:
+        """True when the fetch completed without any error-severity issues.
+
+        An empty ``jobs`` list is *not* a failure — the source may simply have
+        no open positions right now.  Callers that care about emptiness should
+        check ``len(result.jobs) > 0`` separately.
+        """
+        return not any(i.severity == "error" for i in self.issues)
+
+
 # ---------------------------------------------------------------------------
 # Headless browser support (optional — requires: pip install playwright
 #                                                playwright install chromium)
@@ -67,25 +99,6 @@ def _playwright_get_text(
         )]
 
 
-@dataclass
-class FetchIssue:
-    provider: str
-    message: str
-    source_ref: str = ""
-    severity: str = "warning"
-    retryable: bool = False
-    details: Dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class FetchResult:
-    provider: str
-    jobs: List[Dict[str, Any]] = field(default_factory=list)
-    issues: List[FetchIssue] = field(default_factory=list)
-
-    @property
-    def ok(self) -> bool:
-        return len(self.jobs) > 0 and not any(i.severity == "error" for i in self.issues)
 
 
 def make_job(
@@ -394,9 +407,11 @@ def fetch_lever(company: str, fetch_options: Dict[str, Any] | None = None) -> Fe
     for item in data:
         categories = item.get("categories", {}) or {}
         location = categories.get("location", "") or ""
+        lists = item.get("lists") or []
+        list_text = lists[0].get("text", "") if lists else ""
         raw_desc = " ".join([
             item.get("descriptionPlain", "") or "",
-            item.get("lists", [{}])[0].get("text", "") if item.get("lists") else "",
+            list_text,
         ])
         jobs.append(make_job(
             title=item.get("text", ""),
@@ -495,7 +510,7 @@ def _extract_json_ld_jobpostings(html: str, base_url: str) -> List[Dict[str, Any
     return jobs
 
 
-def _extract_jobs_from_rendered_html(html: str, base_url: str) -> List[Dict[str, Any]]:
+def _extract_jobs_from_rendered_html(html: str, base_url: str, source_name: str = "unknown") -> List[Dict[str, Any]]:
     """Extract job listings from fully rendered HTML using all available strategies.
 
     Tries (in order): JSON-LD → Next.js __NEXT_DATA__ → Nuxt 3 __NUXT_DATA__ →
@@ -516,7 +531,7 @@ def _extract_jobs_from_rendered_html(html: str, base_url: str) -> List[Dict[str,
         html, flags=re.I | re.S,
     ):
         try:
-            jobs.extend(_scan_for_jobs(json.loads(raw.strip()), base_url))
+            jobs.extend(_scan_for_jobs(json.loads(raw.strip()), base_url, source_name))
         except Exception:
             pass
     if jobs:
@@ -528,7 +543,7 @@ def _extract_jobs_from_rendered_html(html: str, base_url: str) -> List[Dict[str,
         html, flags=re.I | re.S,
     ):
         try:
-            jobs.extend(_scan_for_jobs(json.loads(raw.strip()), base_url))
+            jobs.extend(_scan_for_jobs(json.loads(raw.strip()), base_url, source_name))
         except Exception:
             pass
     if jobs:
@@ -537,7 +552,7 @@ def _extract_jobs_from_rendered_html(html: str, base_url: str) -> List[Dict[str,
     # 4. Nuxt 2: window.__NUXT__ = {...};
     for m in re.finditer(r'window\.__NUXT__\s*=\s*(\{.*?\})\s*(?:;|</script>)', html, re.S):
         try:
-            jobs.extend(_scan_for_jobs(json.loads(m.group(1)), base_url))
+            jobs.extend(_scan_for_jobs(json.loads(m.group(1)), base_url, source_name))
         except Exception:
             pass
     if jobs:
@@ -549,7 +564,7 @@ def _extract_jobs_from_rendered_html(html: str, base_url: str) -> List[Dict[str,
         html, flags=re.I | re.S,
     ):
         try:
-            jobs.extend(_scan_for_jobs(json.loads(raw.strip()), base_url))
+            jobs.extend(_scan_for_jobs(json.loads(raw.strip()), base_url, source_name))
         except Exception:
             pass
 
@@ -577,7 +592,7 @@ def fetch_browser_site(url: str, fetch_options: Dict[str, Any] | None = None) ->
     if not html:
         return result
 
-    jobs = _extract_jobs_from_rendered_html(html, url)
+    jobs = _extract_jobs_from_rendered_html(html, url, provider)
 
     if not jobs:
         # Follow career/recruit links found in the rendered page
@@ -598,7 +613,7 @@ def fetch_browser_site(url: str, fetch_options: Dict[str, Any] | None = None) ->
             )
             result.issues.extend(child_issues)
             if child_html:
-                jobs.extend(_extract_jobs_from_rendered_html(child_html, link))
+                jobs.extend(_extract_jobs_from_rendered_html(child_html, link, provider))
 
     if not jobs:
         result.issues.append(FetchIssue(
@@ -685,7 +700,7 @@ def fetch_company_site(url: str, fetch_options: Dict[str, Any] | None = None) ->
     return result
 
 
-def _scan_for_jobs(data: Any, source_url: str) -> List[Dict[str, Any]]:
+def _scan_for_jobs(data: Any, source_url: str, source_name: str = "unknown") -> List[Dict[str, Any]]:
     """Recursively scan a nested data structure for job-like records."""
     jobs: List[Dict[str, Any]] = []
     if isinstance(data, dict):
@@ -699,15 +714,15 @@ def _scan_for_jobs(data: Any, source_url: str) -> List[Dict[str, Any]]:
                 location=str(data.get("location") or data.get("city") or ""),
                 url=str(data.get("url") or data.get("job_url") or data.get("apply_url") or source_url),
                 description=_html_to_text(desc),
-                source="japan_dev",
+                source=source_name,
                 skills=_extract_basic_skills(desc),
             ))
         else:
             for v in data.values():
-                jobs.extend(_scan_for_jobs(v, source_url))
+                jobs.extend(_scan_for_jobs(v, source_url, source_name))
     elif isinstance(data, list):
         for item in data:
-            jobs.extend(_scan_for_jobs(item, source_url))
+            jobs.extend(_scan_for_jobs(item, source_url, source_name))
     return jobs
 
 
@@ -735,7 +750,7 @@ def _spa_fetch_with_browser_fallback(
 
     jobs: List[Dict[str, Any]] = []
     if html:
-        jobs = _extract_jobs_from_rendered_html(html, url)
+        jobs = _extract_jobs_from_rendered_html(html, url, provider)
 
     if not jobs:
         # Attempt headless browser fallback
@@ -747,7 +762,7 @@ def _spa_fetch_with_browser_fallback(
         # Only surface Playwright issues when the static fetch also yielded nothing
         result.issues.extend(browser_issues)
         if browser_html:
-            jobs = _extract_jobs_from_rendered_html(browser_html, url)
+            jobs = _extract_jobs_from_rendered_html(browser_html, url, provider)
 
     if not jobs:
         hint = f" ({spa_hint})" if spa_hint else ""
@@ -802,7 +817,7 @@ def fetch_gaijinpot(fetch_options: Dict[str, Any] | None = None) -> FetchResult:
         retry_backoff_seconds=fetch_options.get("retry_backoff_seconds", 0.5),
     )
     if data:
-        jobs = _scan_for_jobs(data, base_url)
+        jobs = _scan_for_jobs(data, base_url, provider)
         if jobs:
             return FetchResult(provider=provider, jobs=jobs, issues=issues)
 
@@ -875,6 +890,9 @@ def fetch_all(sources: Iterable[Dict[str, Any]], fetch_options: Dict[str, Any] |
     all_issues: List[Dict[str, Any]] = []
 
     for source in sources:
+        # Skip human-readable separator / comment objects (all keys start with "_")
+        if isinstance(source, dict) and source and all(k.startswith("_") for k in source.keys()):
+            continue
         result = fetch_from_source(source, fetch_options=fetch_options)
         all_jobs.extend(result.jobs)
         all_issues.extend([

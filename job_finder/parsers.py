@@ -95,12 +95,11 @@ def parse_user_query(query: str) -> Dict[str, object]:
     elif "remote" in text_l:
         remote_preference = "prefer"
 
-    # JLPT level declared in query
-    jlpt_level = None
-    for pattern, level in _JLPT_MAP.items():
-        if pattern in text_l:
-            jlpt_level = level
-            break
+    # JLPT level declared in query — prefer the highest explicit level found
+    # (e.g. "I have N2, working towards N1" → N2 is the current cert)
+    _JLPT_RANK_MAP = {"N1": 1, "N2": 2, "N3": 3}
+    jlpt_hits = [level for pattern, level in _JLPT_MAP.items() if pattern in text_l]
+    jlpt_level = min(jlpt_hits, key=lambda x: _JLPT_RANK_MAP[x]) if jlpt_hits else None
 
     # Chinese speaker flag
     is_chinese_speaker = any(sig in text_l for sig in [

@@ -119,6 +119,10 @@ def validate_config(config: Dict[str, Any]) -> Tuple[List[str], List[str]]:
             errors.append(f"`sources[{i}]` 必须是对象。")
             continue
 
+        # Skip human-readable separator / comment objects (all keys start with "_")
+        if source and all(k.startswith("_") for k in source.keys()):
+            continue
+
         provider = source.get("provider")
         if provider not in SUPPORTED_PROVIDERS:
             errors.append(f"`sources[{i}].provider` 不支持：{provider!r}")

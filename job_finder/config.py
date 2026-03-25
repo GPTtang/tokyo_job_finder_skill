@@ -32,24 +32,44 @@ DEFAULT_FETCH_OPTIONS: Dict[str, Any] = {
     "max_retries": 1,
     "retry_backoff_seconds": 0.5,
     "max_follow_links": 3,
+    "max_concurrent_fetches": 4,
     # Playwright / browser_site options
     "browser_timeout_seconds": 30,   # page load timeout for headless browser
-    "browser_wait_until": "networkidle",  # "load" | "domcontentloaded" | "networkidle"
+    "browser_wait_until": "domcontentloaded",  # "load" | "domcontentloaded" | "networkidle"
 }
 
 
 _DEFAULT_CONFIG_PATH = Path("config/sources.json")
+_EXAMPLE_CONFIG_PATH = Path("config/sources.example.json")
 
 
 def load_config(config_path: str | None) -> Dict[str, Any]:
-    if not config_path:
-        if _DEFAULT_CONFIG_PATH.exists():
-            config_path = str(_DEFAULT_CONFIG_PATH)
-        else:
-            return {"sources": [], "fetch_options": dict(DEFAULT_FETCH_OPTIONS)}
+    search_paths: List[Path] = []
+    if config_path:
+        search_paths.append(Path(config_path))
+    else:
+        search_paths.extend([_DEFAULT_CONFIG_PATH, _EXAMPLE_CONFIG_PATH])
 
-    path = Path(config_path)
-    data = json.loads(path.read_text(encoding="utf-8"))
+    path: Path | None = None
+    for candidate in search_paths:
+        if candidate.exists():
+            path = candidate
+            break
+
+    if path is None:
+        candidates = ", ".join(str(p) for p in search_paths) or str(_DEFAULT_CONFIG_PATH)
+        raise FileNotFoundError(f"未找到配置文件：{candidates}")
+
+    raw = path.read_text(encoding="utf-8")
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as exc:  # pragma: no cover - pass context upstream
+        raise json.JSONDecodeError(f"{exc.msg} (in {path})", exc.doc, exc.pos)
+    meta = data.setdefault("_meta", {})
+    if isinstance(meta, dict):
+        meta.setdefault("config_path", str(path))
+        if path == _EXAMPLE_CONFIG_PATH:
+            meta.setdefault("note", "loaded from sources.example.json (fallback)")
     if "fetch_options" not in data:
         data["fetch_options"] = dict(DEFAULT_FETCH_OPTIONS)
     else:
@@ -103,6 +123,7 @@ def validate_config(config: Dict[str, Any]) -> Tuple[List[str], List[str]]:
         backoff = fetch_options.get("retry_backoff_seconds")
         max_follow = fetch_options.get("max_follow_links")
         browser_timeout = fetch_options.get("browser_timeout_seconds")
+        concurrency = fetch_options.get("max_concurrent_fetches")
         if not isinstance(timeout, (int, float)) or timeout <= 0:
             errors.append("`fetch_options.timeout_seconds` 必须是大于 0 的数字。")
         if not isinstance(retries, int) or retries < 0:
@@ -113,6 +134,8 @@ def validate_config(config: Dict[str, Any]) -> Tuple[List[str], List[str]]:
             errors.append("`fetch_options.max_follow_links` 必须是大于等于 0 的整数。")
         if browser_timeout is not None and (not isinstance(browser_timeout, (int, float)) or browser_timeout <= 0):
             errors.append("`fetch_options.browser_timeout_seconds` 必须是大于 0 的数字。")
+        if concurrency is not None and (not isinstance(concurrency, int) or concurrency <= 0):
+            errors.append("`fetch_options.max_concurrent_fetches` 必须是大于 0 的整数。")
 
     for i, source in enumerate(sources):
         if not isinstance(source, dict):

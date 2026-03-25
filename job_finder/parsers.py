@@ -75,7 +75,8 @@ def parse_user_query(query: str) -> Dict[str, object]:
 
     location_hits = []
     for loc in ["Tokyo", "Japan", "Remote", "Osaka", "Kyoto", "Yokohama",
-                "東京", "大阪", "京都", "横浜"]:
+                "東京", "大阪", "京都", "横浜",
+                "东京", "日本", "大阪市", "京都市"]:
         if loc.lower() in text_l:
             location_hits.append(loc)
 
@@ -90,9 +91,9 @@ def parse_user_query(query: str) -> Dict[str, object]:
     })
 
     remote_preference = None
-    if "remote only" in text_l or "fully remote" in text_l:
+    if "remote only" in text_l or "fully remote" in text_l or "纯远程" in text_l:
         remote_preference = "only"
-    elif "remote" in text_l:
+    elif "remote" in text_l or "远程" in text_l or "リモート" in text_l:
         remote_preference = "prefer"
 
     # JLPT level declared in query — prefer the highest explicit level found

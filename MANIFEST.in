@@ -1,5 +1,4 @@
 include README.md
+include SKILL.md
 recursive-include config *.json
 recursive-include docs *.md
-recursive-include examples *.py
-recursive-include tests *.py

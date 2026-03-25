@@ -107,13 +107,23 @@ If the user profile is underspecified:
 ---
 
 ## File layout
-- `job_finder/skill.py`: entrypoint
-- `job_finder/fetchers.py`: fetch from configured public job sources
-- `job_finder/parsers.py`: parse user intent / normalize text
-- `job_finder/matcher.py`: rank and score jobs
-- `job_finder/formatter.py`: format final report
-- `config/sources.example.json`: example source configuration
-- `examples/`: sample invocations
+```
+job_finder/          # core package
+  skill.py           # entry point
+  cli.py             # CLI wrapper
+  config.py          # load/validate sources + priority_companies
+  fetchers.py        # per-provider fetch logic
+  parsers.py         # parse user query → profile
+  autofilters.py     # merge query-derived filters into sources
+  matcher.py         # score and rank jobs (priority boost included)
+  formatter.py       # render text/JSON report
+config/
+  sources.example.json      # template — copy to sources.json
+  sources.json              # your live config (gitignored)
+  priority_companies.json   # priority boost rules
+docs/
+  development.md            # full technical reference
+```
 
 ---
 

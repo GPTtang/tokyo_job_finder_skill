@@ -1,4 +1,0 @@
-I'm looking for backend or platform engineer roles in Japan.
-My stack includes Python, Go, Docker, Kubernetes, AWS, and API design.
-I prefer English-friendly companies or remote roles.
-Rank the best jobs and tell me which ones to prioritize.

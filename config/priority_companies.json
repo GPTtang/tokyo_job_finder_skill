@@ -1,0 +1,311 @@
+{
+  "_meta": {
+    "description": "用户指定优先匹配公司 + 中国オフショア開発（对日外包）実績・評価の高い企業 + 中国系IT乙方自動判定ルール",
+    "last_updated": "2026-03-25",
+    "priority_boost": 0.25,
+    "chinese_company_boost": 0.20,
+    "notes": [
+      "priority_boost：当职位 URL 或公司名命中 named_companies 中的规则时叠加的分值（+0.25）",
+      "chinese_company_boost：当职位命中 chinese_it_signals 但不在 named_companies 中时叠加的分值（+0.20）",
+      "两种 boost 不叠加：named_companies 优先，chinese_it_signals 次之"
+    ]
+  },
+
+  "named_companies": [
+
+    {
+      "_group": "【グループA】ユーザー指定6社 ── Bridge SE・日中オフショア甲方",
+      "_note": "ユーザーが明示的に優先指定した日本企業。中国拠点あり or 中国語明記優遇。"
+    },
+    {
+      "id": "fujisoft",
+      "name": "富士ソフト株式会社",
+      "description": "日本最大の独立系 SIer（約1万人）。C#/.NET/Java 中途採用116件超。PM 昇進パス明確。中国オフショアとの協業実績あり。",
+      "why_priority": "大規模プロジェクト経験を積める国内 SIer トップクラス。中途でも技術職→PM キャリアパスが整備されている。",
+      "url_patterns": ["fsi.co.jp"],
+      "name_patterns": ["富士ソフト", "Fuji Soft", "FujiSoft", "fujisoft"],
+      "tags": ["独立系SIer", "大規模開発", "C#", ".NET", "Java", "Azure", "PM昇進"]
+    },
+    {
+      "id": "j_and_c",
+      "name": "株式会社J&Cカンパニー",
+      "description": "大連に開発拠点を持つ日中ブリッジ SIer。金融・Web・スマホアプリ開発に実績。PM 職は10名以上のマネジメント必須。リモート可。",
+      "why_priority": "大連拠点のため中国語が直接的な競争優位になる。PM ¥500万〜800万／SE ¥400万〜600万。",
+      "url_patterns": ["j-and-c.co.jp"],
+      "name_patterns": ["J&C", "J&Cカンパニー", "j-and-c"],
+      "tags": ["ブリッジSE", "大連", "オフショア", "金融", "Web", "リモート可"]
+    },
+    {
+      "id": "kenes",
+      "name": "株式会社ケネス",
+      "description": "大連拠点の IT コンサル兼 SIer。健思软件（大連）を母体とし、労働者派遣・オフショア開発の実績。外国語スキルを明記して優遇。¥420万〜840万。",
+      "why_priority": "外国語（中国語）が加点要素として明記。大連本社との直接連携で中国語話者に優位。",
+      "url_patterns": ["kenes.co.jp"],
+      "name_patterns": ["ケネス", "Kenes", "健思"],
+      "tags": ["ITコンサル", "外国語優遇", "大連", "労働者派遣", "オフショア"]
+    },
+    {
+      "id": "kyotatsu_cnc",
+      "name": "株式会社共達（CNC Systems）",
+      "description": "日中 IT ブリッジ特化。大連・上海・成都に開発拠点。Bridge SE が安定した品質を提供。PMO 緊急募集中。",
+      "why_priority": "Bridge SE ポジションで中国語が必須。緊急募集中のため採用可能性が高い。",
+      "url_patterns": ["cncsys.co.jp"],
+      "name_patterns": ["共達", "CNC Systems", "cncsys", "CNCシステム"],
+      "tags": ["ブリッジSE", "大連", "上海", "成都", "PMO", "緊急募集"]
+    },
+    {
+      "id": "netengine",
+      "name": "ネットエンジン株式会社",
+      "description": "丁寧なコミュニケーションに定評がある中小 SIer。Java/VB/C# 明記。ERP/IoT 案件。中途給与面議で交渉しやすい。",
+      "why_priority": "中小規模のため外国人エンジニアの採用に柔軟。給与交渉のしやすさが魅力。",
+      "url_patterns": ["netengine.co.jp"],
+      "name_patterns": ["ネットエンジン", "NetEngine", "netengine"],
+      "tags": ["Java", "C#", "VB", "ERP", "IoT", "Salesforce", "給与面議"]
+    },
+    {
+      "id": "global_asp",
+      "name": "グローバル・アスピレーションズ株式会社",
+      "description": "Azure/SQL Server 特化。採用票に「中国語」を明記して優遇。残業10h 未満。銀座オフィス。¥360万〜720万。",
+      "why_priority": "採用要件に「中国語スキル歓迎」を明記している数少ない日系企業。ワークライフバランスも良好。",
+      "url_patterns": ["global-asp.co.jp"],
+      "name_patterns": ["グローバル・アスピレーションズ", "Global Aspirations", "global-asp"],
+      "tags": ["Azure", "SQL Server", "C#", "Java", "中国語優遇", "残業少", "銀座"]
+    },
+
+    {
+      "_group": "【グループB】中国大手 IT 乙方 日本法人 ── sources.json 第一優先と対応",
+      "_note": "中国系 SIer の日本法人。中文は直接優位。Bridge SE / PM ポジション多数。"
+    },
+    {
+      "id": "neusoft_jp",
+      "name": "東軟日本株式会社（Neusoft Japan）",
+      "description": "沈陽に本社を持つ中国最大級の IT サービス企業（約2万人）の日本法人。車載・組込・Web・金融・医療系。Bridge SE ¥450万〜1000万。",
+      "why_priority": "対日歴史が長く実績豊富。Bridge SE/PM を継続的に採用。日本語 N2 程度から応募可。",
+      "url_patterns": ["jp.neusoft.com", "neusoft.co.jp"],
+      "name_patterns": ["東軟日本", "Neusoft Japan", "東軟", "Neusoft", "东软"],
+      "tags": ["Bridge SE", "沈陽", "車載", "組込", "医療IT", "オフショア"]
+    },
+    {
+      "id": "gientech_jp",
+      "name": "GienTech Japan株式会社（文思海辉）",
+      "description": "中国最大の IT サービス企業のひとつ（旧 Pactera / 文思 + 海輝）。DX・金融・保険・SAP。日中英三語対応。",
+      "why_priority": "中国語話者を積極採用。DX コンサルタントから開発まで幅広いポジション。東京オフィス。",
+      "url_patterns": ["jp.gientech.com", "gientech.com"],
+      "name_patterns": ["GienTech", "文思海辉", "Pactera", "ジェンテック"],
+      "tags": ["DX", "SAP", "金融", "保険", "Bridge SE", "日中英三語"]
+    },
+    {
+      "id": "chinasoft_tokyo",
+      "name": "中軟東京株式会社（中软国际）",
+      "description": "北京母体（約6万人）の日本法人。SES・クラウド・AI 開発。WeChat 採用対応。日中双語運営。大連・北京オフショア。",
+      "why_priority": "規模と安定感あり。WeChat 経由の中国語採用対応が他社にない強み。",
+      "url_patterns": ["chinasoft-tokyo.co.jp", "chinasofti.com"],
+      "name_patterns": ["中軟東京", "中軟", "ChinaSoft", "中软国际", "チャイナソフト"],
+      "tags": ["SES", "クラウド", "AI", "オフショア", "大連", "北京", "WeChat採用"]
+    },
+    {
+      "id": "beyondsoft_jp",
+      "name": "Beyondsoft Japan（博彦科技）",
+      "description": "北京母体の IT サービス企業。日本500人規模。Big Data・AI・Azure・AWS。¥6M+。品川 Osaki 本社。",
+      "why_priority": "グローバル案件多数。AI・クラウドポジションが充実。中文話者に採用時優遇あり。",
+      "url_patterns": ["beyondsoft.com"],
+      "name_patterns": ["Beyondsoft", "博彦科技", "博彦", "ビヨンドソフト"],
+      "tags": ["Big Data", "AI", "Azure", "AWS", "コンサルタント", "品川"]
+    },
+    {
+      "id": "isoftstone_jp",
+      "name": "iSoftStone Japan（软通动力）",
+      "description": "北京母体（約8万人）の日本法人。Java/.NET/SAP/Oracle。東京千代田オフィス。",
+      "why_priority": "大規模体制で継続案件が安定。SAP・Oracle 系の高単価ポジションあり。",
+      "url_patterns": ["isoftstone.jp", "isoftstone.com"],
+      "name_patterns": ["iSoftStone", "软通动力", "软通", "ソフトストーン"],
+      "tags": ["Java", "SAP", "Oracle", "COBOL", ".NET", "金融"]
+    },
+    {
+      "id": "rayoo_jp",
+      "name": "日本瑞友テクノロジー（瑞友科技）",
+      "description": "北京瑞友科技日本法人。NTT Data との JV 実績。製造・流通・通信。残業20h 未満。年間120日以上休暇。台東区東京。",
+      "why_priority": "ワークライフバランスが良好で継続率が高い。中国本社との連携で中国語話者に有利。",
+      "url_patterns": ["rayoo.co.jp"],
+      "name_patterns": ["瑞友", "Rayoo", "日本瑞友"],
+      "tags": ["製造", "流通", "通信", "残業少", "NTT Data JV"]
+    },
+    {
+      "id": "wicresoft_jp",
+      "name": "Wicresoft Japan（微創軟件）",
+      "description": "旧 Microsoft 上海 JV。Microsoft ソリューション特化。SES・オフショア。※2025年4月親会社中国事業停止のため状況確認推奨。",
+      "why_priority": "Microsoft Azure/SharePoint 特化。中国系企業としては珍しい Microsoft 専門体制。",
+      "url_patterns": ["wicresoft.co.jp", "wicresoft.com"],
+      "name_patterns": ["Wicresoft", "微創軟件", "微创", "ウィクリソフト"],
+      "tags": ["Microsoft", "Azure", "SharePoint", ".NET", "C#", "SES", "オフショア"]
+    },
+    {
+      "id": "ansin_jp",
+      "name": "安信株式会社",
+      "description": "中国人（大連出身）創業の SES 特化会社。社員55名／エンジニア50名。中国人スタッフ35名。WeChat 採用対応（ID: ansin201412）。",
+      "why_priority": "中国人が多く中文環境が整備されている。全経験レベル歓迎で未経験者も応募可。N2 以上推奨。",
+      "url_patterns": ["an-sin.co.jp"],
+      "name_patterns": ["安信株式会社", "安信", "アンシン"],
+      "tags": ["SES", "大連出身", "WeChat採用", "全経験歓迎", "N2+"]
+    },
+    {
+      "id": "smhc_jp",
+      "name": "SMHC株式会社",
+      "description": "中国人 CEO（新宿）。SI・インフラ・AI 医療。社員の70%が未経験 OK。多文化グローバル志向。",
+      "why_priority": "未経験者でも入社しやすい。中国人多数在籍で中文業務が日常的。AI 医療という成長領域。",
+      "url_patterns": ["smhc.co.jp", "recruit.smhc.co.jp"],
+      "name_patterns": ["SMHC"],
+      "tags": ["インフラ", "AI医療", "未経験OK", "新宿", "クラウド"]
+    },
+
+    {
+      "_group": "【グループC】中国オフショア開発 実績・評価の高い企業（新規追加）",
+      "_note": "対日外包（オフショア開発）で実績・評判の良い中国IT企業。日本法人 or 日本担当拠点あり。中国离岸开发里比较有实绩、评价较高。"
+    },
+    {
+      "id": "yidatec_jp",
+      "name": "亿达信息日本（YIDATEC Japan）",
+      "description": "大連本拠（7000人超）の対日オフショア IT 大手。顧客に SOFTBANK・FUJIFILM・Sony・OKI・太陽生命。大連ソフトウェアパーク入居。2020年大連トップ10 サービス外注企業受賞。",
+      "why_priority": "日本メジャー企業との直接取引実績が豊富。大連拠点のため中国語話者に有利。Bridge SE 需要が高い。",
+      "url_patterns": ["yidatec.com"],
+      "name_patterns": ["亿达信息", "YIDATEC", "亿达", "YiDaTec"],
+      "tags": ["大連", "対日オフショア", "Bridge SE", "製造", "保険", "SOFTBANK案件"]
+    },
+    {
+      "id": "hundsun_jp",
+      "name": "日本恒生ソフトウェア株式会社（Hundsun Japan）",
+      "description": "中国トップ金融 IT 企業（上証 600570）の日本法人。証券・資産運用・ウェルスマネジメント系システム特化。東京オフィス。",
+      "why_priority": "金融 IT 専門で高単価ポジション。日本金融機関向けシステム導入の Bridge 役が常時需要。",
+      "url_patterns": ["hundsun.co.jp", "hundsun.com"],
+      "name_patterns": ["恒生電子", "Hundsun", "恒生", "日本恒生"],
+      "tags": ["金融IT", "証券", "資産運用", "Bridge SE", "高単価"]
+    },
+    {
+      "id": "dhc_software_jp",
+      "name": "東華軟件日本（DHC Software Japan）",
+      "description": "中国 A 株上場（002065）の大手 IT サービス企業。医療・保険・政府系 IT 専門。日本の医療・保険会社向けシステム導入実績。",
+      "why_priority": "医療・保険分野の高付加価値案件が多い。大型プロジェクトに Bridge PM/SE を継続採用。",
+      "url_patterns": ["dhcsoftware", "dhcsoft", "dhc-software"],
+      "name_patterns": ["東華軟件", "DHC Software", "东华软件", "DHCソフト"],
+      "tags": ["医療IT", "保険IT", "政府系", "Bridge PM", "大規模案件"]
+    },
+    {
+      "id": "inspur_jp",
+      "name": "浪潮日本（Inspur Japan）",
+      "description": "中国大手 IT 企業・浪潮集団の日本法人。サーバー・クラウド・政府系 DX 案件。AI インフラ構築支援。",
+      "why_priority": "クラウド・AI インフラ分野の成長企業。日本法人立ち上げフェーズのため少数精鋭採用で裁量大。",
+      "url_patterns": ["inspur.co.jp", "inspur.com"],
+      "name_patterns": ["浪潮", "Inspur", "インスパー"],
+      "tags": ["クラウド", "AIインフラ", "サーバー", "政府DX", "成長期採用"]
+    },
+    {
+      "id": "ufida_jp",
+      "name": "用友日本株式会社（UFIDA / Yonyou Japan）",
+      "description": "中国最大の ERP ベンダー（用友网络）の日本法人。在日中国系企業向け ERP・財務システム導入・サポート。",
+      "why_priority": "在日中国企業が顧客のため中文必須。ERP コンサルタントは高単価かつ長期安定。",
+      "url_patterns": ["ufida.co.jp", "yonyou.co.jp", "yonyou.com"],
+      "name_patterns": ["用友日本", "UFIDA", "Yonyou", "用友", "ユーフィーダ"],
+      "tags": ["ERP", "財務システム", "中国語必須", "コンサルタント", "在日中国企業"]
+    },
+    {
+      "id": "hand_jp",
+      "name": "汉得日本（HAND Japan）",
+      "description": "SAP 実装専門の中国系 IT コンサル企業（汉得信息技術）の日本法人。製造・流通・化学メーカー向け SAP S/4HANA 導入実績。",
+      "why_priority": "SAP コンサルタントは市場単価が高い（¥700万〜1200万）。Bridge コンサルとして中国語話者を継続採用。",
+      "url_patterns": ["hand-china.com", "hand-ent.co.jp", "hand-ent.com"],
+      "name_patterns": ["汉得", "HAND Enterprise", "HANDソリューション", "汉得信息"],
+      "tags": ["SAP", "S/4HANA", "製造業", "コンサルタント", "高単価"]
+    },
+    {
+      "id": "iflytek_jp",
+      "name": "科大訊飛日本（iFlytek Japan）",
+      "description": "中国最大の AI 音声技術企業（科大讯飞）の日本法人。AI 翻訳・音声認識・教育 AI 製品。東京オフィス。",
+      "why_priority": "AI・NLP 分野の先端技術。中日翻訳 AI 製品のため中国語話者が核心人材。",
+      "url_patterns": ["iflytek.co.jp", "iflytek.com"],
+      "name_patterns": ["科大訊飛", "iFlytek", "科大讯飞", "アイフライテック"],
+      "tags": ["AI", "音声認識", "NLP", "翻訳AI", "教育AI"]
+    },
+    {
+      "id": "digitalchina_jp",
+      "name": "神州数碼日本（Digital China Japan）",
+      "description": "中国大手 IT サービス・流通企業（神州数码）の日本法人。IT インフラ・DX コンサル・クラウドマイグレーション。",
+      "why_priority": "インフラから DX まで幅広い案件。中国本社との連携案件で中国語話者を優先採用。",
+      "url_patterns": ["digitalchina.com", "dcits.co.jp", "dcits.com"],
+      "name_patterns": ["神州数碼", "神州数码", "Digital China", "デジタルチャイナ"],
+      "tags": ["ITインフラ", "DX", "クラウド", "中国系大手"]
+    },
+    {
+      "id": "sunline_jp",
+      "name": "长亮科技日本（Sunline Technology Japan）",
+      "description": "中国 A 株上場（300348）の金融 IT 専門企業。銀行・保険システム。中国大手銀行との実績を日本市場に展開。",
+      "why_priority": "銀行・保険の基幹系システム分野で高単価案件。Bridge SE として中国開発チームとの連携が必須。",
+      "url_patterns": ["sunline.co.jp", "sunline.cn"],
+      "name_patterns": ["长亮科技", "Sunline", "サンライン", "長亮"],
+      "tags": ["銀行IT", "保険IT", "基幹系", "高単価", "Bridge SE"]
+    },
+    {
+      "id": "thunisoft_jp",
+      "name": "华宇软件日本（Thunisoft Japan）",
+      "description": "中国 A 株上場（300271）の法曹・政府 IT 専門企業。電子政府・裁判所・検察システムを中国全土に納入。日本官公庁向け DX 展開中。",
+      "why_priority": "官公庁・法曹 DX という特殊分野で競合が少ない。日本政府案件の拡大フェーズにあり少数精鋭採用。",
+      "url_patterns": ["thunisoft.com", "thunisoft.co.jp"],
+      "name_patterns": ["华宇软件", "Thunisoft", "ファニソフト"],
+      "tags": ["電子政府", "官公庁DX", "法曹IT", "特殊分野", "成長期"]
+    }
+  ],
+
+  "chinese_it_signals": {
+    "description": "named_companies に未登録の中国系 IT 乙方を自動判定するシグナル。URL / 会社名 / 求人文中に1件以上マッチで chinese_company_boost を適用。",
+
+    "url_domain_patterns": [
+      "neusoft", "gientech", "chinasoft-tokyo", "chinasofti",
+      "beyondsoft", "isoftstone", "rayoo.co.jp", "wicresoft",
+      "an-sin.co.jp", "smhc.co.jp",
+      "yidatec", "hundsun", "dhcsoftware", "dhcsoft",
+      "inspur", "ufida", "yonyou", "hand-china", "hand-ent",
+      "iflytek", "digitalchina", "dcits", "sunline", "thunisoft",
+      "asiainfo", "camelotidea", "rihua", "sinohope"
+    ],
+
+    "company_name_patterns": [
+      "東軟", "Neusoft", "东软",
+      "文思海辉", "GienTech", "Pactera",
+      "中軟", "ChinaSoft", "中软国际", "チャイナソフト",
+      "博彦", "Beyondsoft",
+      "软通动力", "iSoftStone", "ソフトストーン",
+      "瑞友", "Rayoo", "日本瑞友",
+      "微創", "Wicresoft",
+      "安信", "SMHC",
+      "亿达信息", "YIDATEC",
+      "恒生電子", "Hundsun",
+      "東華軟件", "DHC Software", "东华软件",
+      "浪潮", "Inspur",
+      "用友", "UFIDA", "Yonyou",
+      "汉得", "HAND Enterprise", "汉得信息",
+      "科大訊飛", "iFlytek", "科大讯飞",
+      "神州数碼", "Digital China", "神州数码",
+      "长亮科技", "Sunline",
+      "华宇软件", "Thunisoft",
+      "亚信科技", "AsiaInfo",
+      "中科软", "CASS Software",
+      "大連ソフト", "大連開発", "大連オフショア"
+    ],
+
+    "job_text_signals": [
+      "中国語", "中文", "chinese", "mandarin", "普通話",
+      "大連", "dalian", "上海", "shanghai",
+      "北京", "beijing", "深圳", "shenzhen",
+      "沈阳", "shenyang", "成都", "chengdu",
+      "杭州", "hangzhou", "南京", "nanjing",
+      "オフショア", "offshore",
+      "日中ブリッジ", "ブリッジSE", "ブリッジエンジニア",
+      "bridge se", "bridge engineer", "bridge pm",
+      "中国拠点", "中国チーム", "中国開発",
+      "対日外包", "日本向け開発", "日中連携",
+      "中国オフショア", "中国人", "华人",
+      "日中", "中日"
+    ],
+
+    "min_signals_for_boost": 1
+  }
+}

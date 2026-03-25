@@ -91,6 +91,10 @@ def apply_dynamic_filters_to_sources(
     dynamic = build_provider_filters_from_profile(profile)
     out: List[Dict[str, Any]] = []
     for source in sources:
+        # Pass separator/comment objects through unchanged so fetch_all can skip them
+        if source and all(k.startswith("_") for k in source.keys()):
+            out.append(source)
+            continue
         item = deepcopy(source)
         item["filters"] = merge_provider_filters(item.get("filters"), dynamic)
         out.append(item)

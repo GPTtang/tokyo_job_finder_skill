@@ -342,7 +342,8 @@ def _apply_source_filters(
         locations_l = [loc.lower() for loc in locations]
         filtered = [
             job for job in filtered
-            if any(loc in str(job.get("location", "")).lower() for loc in locations_l)
+            if not str(job.get("location", "")).strip()  # no location set → keep
+            or any(loc in str(job.get("location", "")).lower() for loc in locations_l)
         ]
 
     if filters.get("remote_only"):

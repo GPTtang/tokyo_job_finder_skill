@@ -41,6 +41,7 @@ DEFAULT_FETCH_OPTIONS: Dict[str, Any] = {
 
 _DEFAULT_CONFIG_PATH = Path("config/sources.json")
 _EXAMPLE_CONFIG_PATH = Path("config/sources.example.json")
+_PRIORITY_COMPANIES_PATH = Path("config/priority_companies.json")
 
 
 def load_config(config_path: str | None) -> Dict[str, Any]:
@@ -79,6 +80,15 @@ def load_config(config_path: str | None) -> Dict[str, Any]:
     if "sources" not in data:
         data["sources"] = []
     return data
+
+
+def load_priority_companies(path: str | None = None) -> Dict[str, Any]:
+    """Load priority_companies.json; returns empty structure if file not found."""
+    p = Path(path) if path else _PRIORITY_COMPANIES_PATH
+    if not p.exists():
+        return {"named_companies": [], "chinese_it_signals": {}, "_meta": {}}
+    raw = p.read_text(encoding="utf-8")
+    return json.loads(raw)
 
 
 def _validate_filters(filters: Any, source_idx: int, errors: List[str], warnings: List[str]) -> None:
@@ -159,7 +169,10 @@ def validate_config(config: Dict[str, Any]) -> Tuple[List[str], List[str]]:
 
         _validate_filters(source.get("filters"), i, errors, warnings)
 
-        unknown_fields = sorted(set(source.keys()) - set(required_fields) - {"provider", "filters"})
+        unknown_fields = sorted(
+            k for k in set(source.keys()) - set(required_fields) - {"provider", "filters"}
+            if not k.startswith("_")
+        )
         if unknown_fields:
             warnings.append(
                 f"`sources[{i}]` 存在未使用字段：{', '.join(unknown_fields)}"

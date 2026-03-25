@@ -73,12 +73,25 @@ def parse_user_query(query: str) -> Dict[str, object]:
 
     roles = [r for r in _ROLE_VOCAB if r.lower() in text_l]
 
+    # Each group is a set of aliases for the same place.
+    # When any alias is detected we add all canonical forms,
+    # so the location filter matches both English and CJK job listings.
+    _LOCATION_GROUPS = [
+        ["Tokyo", "東京", "东京"],
+        ["Japan", "日本"],
+        ["Remote", "リモート", "远程"],
+        ["Osaka", "大阪", "大阪市"],
+        ["Kyoto", "京都", "京都市"],
+        ["Yokohama", "横浜"],
+    ]
+    seen_locs: set = set()
     location_hits = []
-    for loc in ["Tokyo", "Japan", "Remote", "Osaka", "Kyoto", "Yokohama",
-                "東京", "大阪", "京都", "横浜",
-                "东京", "日本", "大阪市", "京都市"]:
-        if loc.lower() in text_l:
-            location_hits.append(loc)
+    for group in _LOCATION_GROUPS:
+        if any(alias.lower() in text_l for alias in group):
+            for canonical in group:
+                if canonical.lower() not in seen_locs:
+                    seen_locs.add(canonical.lower())
+                    location_hits.append(canonical)
 
     skills = [s for s in _SKILL_VOCAB if s.lower() in text_l]
 

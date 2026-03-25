@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 
 # Signals in job text that indicate Chinese speaker is preferred/advantaged
 _CHINESE_ADVANTAGE_SIGNALS = [
@@ -81,7 +81,56 @@ def _detect_jlpt_requirement(job_text: str) -> str | None:
     return min(found, key=lambda x: _JLPT_RANK[x])
 
 
-def score_job(profile: Dict[str, object], job: Dict[str, object]) -> Dict[str, object]:
+def _check_priority(
+    job: Dict[str, object],
+    priority_cfg: Dict[str, Any],
+) -> Tuple[bool, float, Optional[str]]:
+    """Return (is_priority, boost, label) for the job against priority_companies config."""
+    if not priority_cfg:
+        return False, 0.0, None
+
+    meta = priority_cfg.get("_meta") or {}
+    named_boost = float(meta.get("priority_boost", 0.25))
+    chinese_boost = float(meta.get("chinese_company_boost", 0.20))
+
+    job_url = str(job.get("url", "")).lower()
+    job_company = str(job.get("company", "")).lower()
+
+    # ── Check named companies first (highest priority) ────────────────
+    for company in priority_cfg.get("named_companies") or []:
+        for pat in company.get("url_patterns") or []:
+            if pat.lower() in job_url:
+                return True, named_boost, company["name"]
+        for pat in company.get("name_patterns") or []:
+            if pat.lower() in job_company:
+                return True, named_boost, company["name"]
+
+    # ── Check Chinese IT company signals (secondary) ──────────────────
+    signals = priority_cfg.get("chinese_it_signals") or {}
+    for pat in signals.get("url_domain_patterns") or []:
+        if pat.lower() in job_url:
+            return True, chinese_boost, "中国系IT乙方"
+    for pat in signals.get("company_name_patterns") or []:
+        if pat.lower() in job_company:
+            return True, chinese_boost, "中国系IT乙方"
+
+    job_text = f"{job.get('title', '')} {job.get('description', '')}".lower()
+    min_signals = int(signals.get("min_signals_for_boost", 1))
+    text_hits = sum(
+        1 for sig in (signals.get("job_text_signals") or [])
+        if sig.lower() in job_text
+    )
+    if text_hits >= min_signals:
+        return True, chinese_boost, "中国系IT乙方（テキスト判定）"
+
+    return False, 0.0, None
+
+
+def score_job(
+    profile: Dict[str, object],
+    job: Dict[str, object],
+    priority_cfg: Optional[Dict[str, Any]] = None,
+) -> Dict[str, object]:
     title = str(job.get("title", ""))
     location = str(job.get("location", ""))
     description = str(job.get("description", ""))
@@ -114,6 +163,9 @@ def score_job(profile: Dict[str, object], job: Dict[str, object]) -> Dict[str, o
     is_bridge_se = _detect_bridge_se(job_text)
     bridge_bonus = 0.10 if (is_chinese_speaker and is_bridge_se) else 0.0
 
+    # ── Bonus: priority company (user-specified or Chinese IT 乙方) ───
+    is_priority, priority_boost, priority_label = _check_priority(job, priority_cfg or {})
+
     # ── Penalty: JLPT requirement exceeds candidate level ────────────
     required_jlpt = _detect_jlpt_requirement(job_text)
     jlpt_penalty = 0.0
@@ -123,7 +175,10 @@ def score_job(profile: Dict[str, object], job: Dict[str, object]) -> Dict[str, o
 
     # ── Final score ───────────────────────────────────────────────────
     base = 0.5 * skill_match + 0.3 * title_match + 0.2 * location_match
-    match_score = round(max(0.0, min(1.0, base + chinese_bonus + bridge_bonus) - jlpt_penalty), 3)
+    match_score = round(
+        max(0.0, min(1.0, base + chinese_bonus + bridge_bonus + priority_boost) - jlpt_penalty),
+        3,
+    )
 
     # ── Reasons ───────────────────────────────────────────────────────
     reasons = []
@@ -138,6 +193,8 @@ def score_job(profile: Dict[str, object], job: Dict[str, object]) -> Dict[str, o
         reasons.append("中国語・中文優遇ポジション（加点）")
     if is_bridge_se and is_chinese_speaker:
         reasons.append("Bridge SE / オフショア連携職（加点）")
+    if is_priority and priority_label:
+        reasons.append(f"ユーザー指定優先企業：{priority_label}（+{priority_boost:.0%}加点）")
 
     # ── Gaps ─────────────────────────────────────────────────────────
     gaps = []
@@ -155,6 +212,8 @@ def score_job(profile: Dict[str, object], job: Dict[str, object]) -> Dict[str, o
     enriched["chinese_advantage"] = chinese_advantage
     enriched["is_bridge_se"] = is_bridge_se
     enriched["required_jlpt"] = required_jlpt
+    enriched["is_priority_company"] = is_priority
+    enriched["priority_label"] = priority_label
     return enriched
 
 
@@ -162,8 +221,9 @@ def rank_jobs(
     profile: Dict[str, object],
     jobs: List[Dict[str, object]],
     top_n: int = 5,
+    priority_cfg: Optional[Dict[str, Any]] = None,
 ) -> List[Dict[str, object]]:
-    ranked = [score_job(profile, job) for job in jobs]
+    ranked = [score_job(profile, job, priority_cfg=priority_cfg) for job in jobs]
     ranked.sort(
         key=lambda x: (x.get("match_score", 0), x.get("company", ""), x.get("title", "")),
         reverse=True,
